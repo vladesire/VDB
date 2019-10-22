@@ -29,23 +29,15 @@ private:
     uint8_t type;
     int int_val() const
     {
-        int res = 0;
-
-        for (int i = 0; i < 4; ++i)
-            res |= (int(unsigned char(buff[i])) << (i * 8));
-
-        return res;
+        int a;
+        memcpy((char *)&a, buff, 4);
+        return a;
     }
-
-    // DOESN'T WORK
     double double_val() const
     {
-        uint64_t res = 0;
-
-        for (int i = 0; i < 8; ++i)
-            res |= (uint64_t(unsigned char(buff[i])) << (i * 8));
-
-        return (double)res;
+        double a;
+        memcpy((char *)&a, buff, 8);
+        return a;
     }
 public:
     vdb_value(const vdb_value &p2)
@@ -93,9 +85,7 @@ public:
     {
         return int_val();
     }
-
-    // DOESN'T WORK
-    operator double() const // DOESN'T WORK!!!
+    operator double() const
     {
         return double_val();
     }
@@ -436,7 +426,7 @@ void clear_db(meta *db)
 
 
 int main()
-{
+{/*
     make_db("`file.vdb` 3 0 `id` 0 `weight` 3 `name`");
 
     meta *db = open_db("file.vdb");
@@ -472,7 +462,17 @@ int main()
     show_db(db);
 
     close_db(db);
+    */
 
+    
+    int a = 12345, b;
+    char buff[4];
+
+    memcpy(buff, (char *)&a, 4);
+
+    memcpy((char *)&b, buff, 4);
+
+    std::cout << b;
 
     std::cin.get();
     return 0;
