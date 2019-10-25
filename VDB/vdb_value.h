@@ -3,9 +3,77 @@
 
 #include <string>
 #include <cstdint>
+#include <cstring>
+#include <type_traits>
+
 
 namespace vdb
-{
+{/*
+    class ValueBase
+    {
+
+    public:
+        template<typename T>
+        operator T() 
+        {
+            return dynamic_cast<typename vdb::Value<T> *>(this);
+        };
+
+    };
+
+    template <class VAL>
+    class Value : public ValueBase
+    {
+    private:
+        VAL value;
+        static_assert(std::is_same<VAL, int>::value || std::is_same<VAL, double>::value || std::is_same<VAL, char>::value, "This type is forbidden!");
+    public:
+        Value() { }
+        Value(VAL val) { value = val; }
+        operator VAL() const { return value; }
+        VAL &operator=(VAL val)
+        {
+            value = val;
+            return value;
+        }
+        ~Value() { }
+    };
+
+    template <>
+    class Value<char *> : public ValueBase
+    {
+    private:
+        char *value;
+        bool is_allocated;
+    public:
+        ~Value()
+        {
+            if (is_allocated)
+                delete[] value;
+        }
+        Value(char *val)
+        {
+            value = new char[std::strlen(val) + 1];
+            is_allocated = true;
+            std::strcpy(value, val);
+        }
+        Value() { value = nullptr; is_allocated = false; }
+        char * operator=(char * val)
+        {
+            if (is_allocated)
+                delete[] value;
+
+            value = new char[std::strlen(val) + 1];
+            std::strcpy(value, val);
+            return value;
+        }
+        operator char *() const
+        {
+            return value;
+        }
+    };
+    */
+
     class Value
     {
     private:

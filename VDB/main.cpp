@@ -13,7 +13,7 @@ enum coltype
 
 int main()
 {
-    make_db("`file.vdb` 3 0 `id` 0 `weight` 3 `name`");
+    /*make_db("`file.vdb` 3 0 `id` 0 `weight` 3 `name`");
 
     meta *db = open_db("file.vdb");
 
@@ -47,8 +47,27 @@ int main()
 
     show_db(db);
 
+    close_db(db);*/
+
+    //vdb::Value<double> val(12.34);
+
+    make_db("`file.vdb` 3 0 `id` 0 `weight` 3 `name`");
+
+    meta *db = open_db("file.vdb");
+    
+    
+    //vdb::Row row(db);
+
+
+    //row.push_back(val);
+
+    //std::cout << static_cast<double>(row[0]);
+
+
+
     close_db(db);
 
     std::cin.get();
+
     return 0;
 }

@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <iostream>
-
+#include <cstdint>
 #include "vdb_value.h"
 
 typedef struct
