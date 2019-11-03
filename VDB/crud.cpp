@@ -1,6 +1,7 @@
 #include "crud.h"
 
-bool make_db(const std::string &desc)
+
+bool vdb::make_db(const std::string &desc)
 {
     std::string str;
     std::fstream file;
@@ -59,9 +60,9 @@ bool make_db(const std::string &desc)
 
     return true;
 }
-meta *open_db(const char *db_path)
+vdb::meta *vdb::open_db(const char *db_path)
 {
-    meta *m = new meta;
+    vdb::meta *m = new vdb::meta;
 
     m->file_name = std::string(db_path);
 
@@ -76,7 +77,7 @@ meta *open_db(const char *db_path)
     m->file->read((char *)&m->colcount, 1);
     m->file->read((char *)&m->rowcount, 2);
 
-    m->cols = new column[m->colcount];
+    m->cols = new vdb::column[m->colcount];
 
     for (int i = 0; i < (m->colcount); i++)
     {
@@ -90,7 +91,7 @@ meta *open_db(const char *db_path)
 
     return m;
 }
-void close_db(meta *db)
+void vdb::close_db(vdb::meta *db)
 {
     db->file->close();
     delete db->file;
@@ -98,7 +99,7 @@ void close_db(meta *db)
     delete db;
 }
 
-void make_record(meta *db, const std::string &record)
+void vdb::make_record(vdb::meta *db, const std::string &record)
 {
     db->file->seekp(0, std::ios::end);
 
@@ -148,7 +149,7 @@ void make_record(meta *db, const std::string &record)
     db->file->write((char *)&db->rowcount, 2);
     db->file->seekp(0);
 }
-void get_record(meta *db, vrecord &vec, int line)
+void vdb::get_record(vdb::meta *db, vdb::vrecord &vec, int line)
 {
     db->file->seekg(db->meta_size + (line * db->rowsize));
 
@@ -190,7 +191,7 @@ void get_record(meta *db, vrecord &vec, int line)
     }
     db->file->seekg(0);
 }
-void delete_record(meta *db, int line)
+void vdb::delete_record(vdb::meta *db, int line)
 {
     if (line < 0 || line >= db->rowcount)
         return;
@@ -217,7 +218,7 @@ void delete_record(meta *db, int line)
     db->file->write((char *)&db->rowcount, 2);
     db->file->seekp(0);
 }
-void clear_db(meta *db)
+void vdb::clear_db(vdb::meta *db)
 {
     char *buff = new char[db->meta_size];
 

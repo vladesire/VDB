@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void show_record(meta *db, vrecord &vec)
+void vdb::show_record(vdb::meta *db, vdb::vrecord &vec)
 {
     for (int i = 0; i < db->colcount; i++)
         std::cout << vec[i].to_string() << "\t";
@@ -8,7 +8,7 @@ void show_record(meta *db, vrecord &vec)
 
 }
 
-void show_meta(meta *db)
+void vdb::show_meta(vdb::meta *db)
 {
     std::cout << "Meta size: \t" << db->meta_size << std::endl;
     std::cout << "Column count: \t" << int(db->colcount) << std::endl;
@@ -25,7 +25,7 @@ void show_meta(meta *db)
     std::cout << std::endl;
 }
 
-void show_db(meta *db)
+void vdb::show_db(vdb::meta *db)
 {
     for (int i = 0; i < db->colcount; i++)
     {
@@ -36,6 +36,6 @@ void show_db(meta *db)
     {
         vrecord rec;
         get_record(db, rec, i);
-        show_record(db, rec);
+        vdb::show_record(db, rec);
     }
 }

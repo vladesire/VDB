@@ -13,7 +13,7 @@ namespace vdb
     {
 
     public:
-        template<typename T>
+        /*template<typename T>
         operator T() 
         {
             return dynamic_cast<typename vdb::Value<T> *>(this);
@@ -74,7 +74,7 @@ namespace vdb
     };
     */
 
-    class Value
+class Value
     {
     private:
         char *buff = nullptr;

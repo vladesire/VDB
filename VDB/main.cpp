@@ -19,7 +19,7 @@ int main()
 
     show_db(db);
 
-    make_record(db, "1 28 `Vladesire`"); //THERE WAS A MISTAKE AFTER FIRST CLOSURE
+    make_record(db, "1 28 `Vladesire`");
     make_record(db, "2 34 `Vladislav`");
     make_record(db, "3 45 `Vlad`");
     make_record(db, "4 67 `Matvey`");
@@ -48,24 +48,6 @@ int main()
     show_db(db);
 
     close_db(db);*/
-
-    //vdb::Value<double> val(12.34);
-
-    make_db("`file.vdb` 3 0 `id` 0 `weight` 3 `name`");
-
-    meta *db = open_db("file.vdb");
-    
-    
-    //vdb::Row row(db);
-
-
-    //row.push_back(val);
-
-    //std::cout << static_cast<double>(row[0]);
-
-
-
-    close_db(db);
 
     std::cin.get();
 
