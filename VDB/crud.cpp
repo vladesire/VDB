@@ -60,6 +60,44 @@ bool vdb::make_db(const std::string &desc)
 
     return true;
 }
+bool vdb::make_db(const char *db_path, vdb::column *cols, uint8_t colcount)
+{
+    std::fstream file;
+    file.open(db_path, std::ios::binary | std::ios::out);
+
+    if (!file.is_open())
+        return false;
+
+    uint16_t two_bytes;
+
+    //meta size
+    two_bytes = 7 + (33 * colcount);
+
+    file.write((char *)&two_bytes, 2);
+    file.write((char *)&colcount, 1);
+
+    two_bytes = 0;
+    // number of rows (= 0)
+    file.write((char *)&two_bytes, 2);
+
+    int colsize[] = {4, 8, 1, 32, 64}; // int, double, char, str32, str64
+    uint16_t rowsize = 0;
+
+    for (int i = 0; i < colcount; i++)
+    {
+        file.write((char *)&cols[i].type, 1);
+        file.write((char *)&cols[i].name, 32);
+        rowsize += colsize[cols[i].type];
+    }
+
+    // write rowsize
+    file.write((char *)&rowsize, 2);
+
+    file.close();
+
+    return true;
+}
+
 vdb::meta *vdb::open_db(const char *db_path)
 {
     vdb::meta *m = new vdb::meta;
@@ -149,6 +187,65 @@ void vdb::make_record(vdb::meta *db, const std::string &record)
     db->file->write((char *)&db->rowcount, 2);
     db->file->seekp(0);
 }
+
+//THERE'S a TODO INSIDE!!!
+void vdb::insert_into(vdb::meta *db, vdb::Value *vals)
+{
+    // TODO: check if vals is valid (colcount) + think about auto-value in row (like null by default or autoincrement)
+    db->file->seekp(0, std::ios::end);
+
+    // IT DOESN'T WORK!!!
+    for (int i = 0; i < db->colcount; i++)
+    {
+        switch (db->cols[i].type)
+        {
+            // (char *)vals[i] will return pointer to vdb::Value inner buffer that contain the value
+            case 0:
+                db->file->write((char *)vals[i], 4); break;
+            case 1:
+                db->file->write((char *)vals[i], 8); break;
+            case 2:
+                db->file->write((char *)vals[i], 1); break;
+            case 3:
+                db->file->write((char *)vals[i], 32); break;
+            case 4:
+                db->file->write((char *)vals[i], 64); break;
+        }
+    }
+    db->file->seekp(3);
+    ++(db->rowcount);
+    db->file->write((char *)&db->rowcount, 2);
+    db->file->seekp(0);
+}
+void vdb::insert_into(vdb::meta *db, vdb::Row &row)
+{
+    // TODO: check if vals is valid (colcount) + think about auto-value in row (like null by default or autoincrement)
+    db->file->seekp(0, std::ios::end);
+
+    // IT DOESN'T WORK!!!
+    for (int i = 0; i < db->colcount; i++)
+    {
+        switch (db->cols[i].type)
+        {
+            // (char *)vals[i] will return pointer to vdb::Value inner buffer that contain the value
+            case 0:
+                db->file->write((char *)row[i], 4); break;
+            case 1:
+                db->file->write((char *)row[i], 8); break;
+            case 2:
+                db->file->write((char *)row[i], 1); break;
+            case 3:
+                db->file->write((char *)row[i], 32); break;
+            case 4:
+                db->file->write((char *)row[i], 64); break;
+        }
+    }
+    db->file->seekp(3);
+    ++(db->rowcount);
+    db->file->write((char *)&db->rowcount, 2);
+    db->file->seekp(0);
+}
+
 void vdb::get_record(vdb::meta *db, vdb::vrecord &vec, int line)
 {
     db->file->seekg(db->meta_size + (line * db->rowsize));

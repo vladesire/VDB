@@ -130,12 +130,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="file.vdb" />
+    <None Include="testdb.vdb" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crud.h" />
     <ClInclude Include="meta.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="vdb_api.h" />
+    <ClInclude Include="vdb_response.h" />
     <ClInclude Include="vdb_row.h" />
     <ClInclude Include="vdb_value.h" />
   </ItemGroup>

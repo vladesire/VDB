@@ -29,25 +29,31 @@
     <None Include="file.vdb">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="testdb.vdb">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crud.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="meta.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="vdb_value.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vdb_row.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vdb_api.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="meta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="crud.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vdb_response.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

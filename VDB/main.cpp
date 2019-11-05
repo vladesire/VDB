@@ -1,5 +1,6 @@
 #include <iostream>
 #include "vdb_api.h"
+#include <vector>
 
 enum coltype
 {
@@ -11,45 +12,65 @@ enum coltype
     `DB_PATH_WITH_DB_NAME` COLCOUNT COLTYPE_1 `COLNAME_1` ... COLTYPE_N `COLNAME_N`
 */
 
+
+#include <cstdarg>
+
+void foo(int size, ...)
+{
+    va_list args;
+    va_start(args, size);
+
+    while (size-- > 0)
+    {
+        int a = va_arg(args, int);
+        std::cout << a << std::endl;
+    }
+
+    va_end(args);
+}
+
+template <typename T>
+void bar(T once)
+{
+    std::cout << "From base: " << once << std::endl;
+}
+
+template <typename T, typename... Rest>
+void bar(T first, Rest... rest)
+{
+    std::cout << "From recursive: " << first << std::endl;
+    bar(rest...);
+}
+
+
 int main()
 {
-    /*make_db("`file.vdb` 3 0 `id` 0 `weight` 3 `name`");
-
-    meta *db = open_db("file.vdb");
-
-    show_db(db);
-
-    make_record(db, "1 28 `Vladesire`");
-    make_record(db, "2 34 `Vladislav`");
-    make_record(db, "3 45 `Vlad`");
-    make_record(db, "4 67 `Matvey`");
-    make_record(db, "5 32 `Dasha`");
-    make_record(db, "6 132 `Denis`");
-    make_record(db, "7 62 `Gusek`");
-    make_record(db, "8 36 `Nastya`");
-    make_record(db, "9 30 `Liza`");
-    make_record(db, "10 26 `Ilya`");
-
-    delete_record(db, 6);
-
-    show_db(db);
-
-    clear_db(db);
-
-    make_record(db, "5 32 `Dasha`");
-    make_record(db, "2 34 `Vladislav`");
-    make_record(db, "7 62 `Gusek`");
+    //vdb::column cols[size]{{INT, "id"}, {INT, "weight"}, {CHAR, "grade"}, {STR32, "name"}};
+    //vdb::make_db("testdb.vdb", cols, size);
 
 
-    show_db(db);
+    //bar(1, 2, 3, 4, 5, 6);
 
-    delete_record(db, 2);
 
-    show_db(db);
+    vdb::meta *table = vdb::open_db("testdb.vdb");
 
-    close_db(db);*/
+    /*vdb::clear_db(table);
 
+    vdb::make_record(table, "0 52 `A` `Mackenzie Davis_1`");
+    vdb::make_record(table, "1 54 `B` `Mackenzie Davis_2`");
+    vdb::make_record(table, "2 56 `C` `Mackenzie Davis_3`");*/
+
+    //const uint8_t size = 4;
+    //vdb::Value vals[size] = {3, 123, 'C', "Tarararata"};
+
+    vdb::Row row_2(7, 220, 'Z', "Dasha! Dasha! Dasha! Dasha! Dasha! Dasha! Dasha!"); // Can't use str64
+
+
+    vdb::insert_into(table, row_2);
+
+    vdb::show_db(table);
+
+    vdb::close_db(table);
     std::cin.get();
-
     return 0;
 }
