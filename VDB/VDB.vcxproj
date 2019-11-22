@@ -139,6 +139,7 @@
     <ClInclude Include="vdb_api.h" />
     <ClInclude Include="vdb_response.h" />
     <ClInclude Include="vdb_row.h" />
+    <ClInclude Include="vdb_table.h" />
     <ClInclude Include="vdb_value.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

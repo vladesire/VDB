@@ -115,7 +115,6 @@ class Value
 {
 private:
     char *buff = nullptr;
-    bool is_allocated = false;
     uint8_t type;
     int int_val() const
     {
@@ -141,8 +140,9 @@ public:
     {
         type = val.type;
         int size = (type == 0) ? 4 : (type == 1 ? 8 : (type == 2 ? 1 : type == 3 ? 32 : 64));
-        if (is_allocated)
-            delete[] buff;
+
+        delete[] buff; //if buff == nullptr, there'll be no effect
+
         buff = new char[size];
         memcpy(buff, val.buff, size);
     };
@@ -151,36 +151,31 @@ public:
     {
         type = 0;
         buff = new char[4];
-        is_allocated = true;
         memcpy(buff, &val, 4);
     }
     Value(double val)
     {
         type = 1;
         buff = new char[8];
-        is_allocated = true;
         memcpy(buff, &val, 8);
     }
     Value(char val)
     {
         type = 2;
         buff = new char[1];
-        is_allocated = true;
         *buff = val;
     }
     Value(char *val, int size)
     {
         type = (size == 32) ? 3 : 4;
         buff = new char[size];
-        is_allocated = true;
         memcpy(buff, val, size);
     }
     Value(const char *val)
     {
-        uint8_t size = strlen(val);
+        size_t size = strlen(val);
         type = (size < 32) ? 3 : 4;
         buff = new char[type == 3 ? 32 : 64];
-        is_allocated = true;
         memcpy(buff, val, type == 3 ? 32 : 64);
     }
     operator int() const
@@ -217,7 +212,7 @@ public:
     }
     ~Value()
     {
-        delete[] buff;
+		delete[] buff;
     }
 };
 }

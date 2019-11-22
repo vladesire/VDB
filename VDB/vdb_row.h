@@ -5,17 +5,18 @@
 #include "vdb_value.h"
 #include "meta.h"
 
+//#include <tuple>
+
+
 namespace vdb
 {
 class Row
 {
 private:
     Value *values = nullptr;
-    bool is_allocated = false;
-    size_t pointer = 0; // points to the current array index (needed for push_back())
+	size_t pointer = 0; // points to the current array index (needed for push_back())
     size_t size = 0;
     
-
     template <typename T>
     void count_size(T val)         // IN DEVELOPMENT. GOOGLE variadic templates
     {
@@ -29,7 +30,6 @@ private:
         count_size(rest...);
         return;
     }
-
     template <typename T>
     void get_value(T val)         // IN DEVELOPMENT. GOOGLE variadic templates
     {
@@ -44,7 +44,8 @@ private:
         return;
     }
 public:
-    Row(vdb::meta *m) : size(m->colcount)
+	Row() { }
+    Row(size_t size_) : size(size_)
     {
         values = new Value[size];
     }
@@ -59,25 +60,31 @@ public:
     {
         size = row.size;
         pointer = row.pointer;
-        if (row.is_allocated)
+        if (row.values != nullptr)
         {
             values = new Value[size];
-            is_allocated = true;
-            memcpy(values, row.values, size);
+			for (size_t i = 0; i < size; ++i)
+			{
+				values[i] = row.values[i];
+			}
         }
     }
-    void operator=(Row &row)
+    Row &operator=(const Row &row)
     {
+		if (this == &row)
+			return *this;
         size = row.size;
         pointer = row.pointer;
-        if (is_allocated)
-            delete[] values;
-        if (row.is_allocated)
+        delete[] values;
+        if (row.values != nullptr)
         {
             values = new Value[size];
-            is_allocated = true;
-            memcpy(values, row.values, size);
+			for (size_t i = 0; i < size; ++i)
+			{
+				values[i] = row.values[i];
+			}
         }
+		return *this;
     }
     template <typename T>
     Row *push_back(T val)
@@ -91,7 +98,7 @@ public:
         else
             return nullptr;
     }
-    Value &operator[] (size_t index)
+    Value &operator[](size_t index)
     {
         if (index < size)
             return values[index];
@@ -104,12 +111,44 @@ public:
     }
     ~Row()
     {
-        if (is_allocated)
-            delete[] values;
+		delete[] values;
     }
 };
-    
+/*
+class Row_
+{
+private:
 
+public:
+    template <typename... Args>
+    
+	// NONONONO. This class must not have a constuctor;
+	Row_(Args... args)
+    {
+        /*static*//* auto row_ = std::make_tuple(args...);
+
+        std::cout << sizeof(row);
+
+        auto pointer = &row_;
+
+
+    }
+
+	It must be done like this
+
+	template ...
+	auto create_row(...)
+	{
+		...
+	}
+
+    int foo(int t)
+    {
+        return t;
+    }
+    ~Row_(){ }
+};
+*/
 /*class Row_
 {
 private:

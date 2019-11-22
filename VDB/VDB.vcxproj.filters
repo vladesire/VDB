@@ -55,5 +55,8 @@
     <ClInclude Include="vdb_response.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vdb_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

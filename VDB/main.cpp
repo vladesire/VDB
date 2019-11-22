@@ -12,65 +12,52 @@ enum coltype
     `DB_PATH_WITH_DB_NAME` COLCOUNT COLTYPE_1 `COLNAME_1` ... COLTYPE_N `COLNAME_N`
 */
 
+#include <tuple>
 
-#include <cstdarg>
-
-void foo(int size, ...)
+template<typename... Args>
+auto foo(Args... args)
 {
-    va_list args;
-    va_start(args, size);
-
-    while (size-- > 0)
-    {
-        int a = va_arg(args, int);
-        std::cout << a << std::endl;
-    }
-
-    va_end(args);
+    return std::make_tuple(args...);
 }
 
-template <typename T>
-void bar(T once)
+void print_response(vdb::Response &response)
 {
-    std::cout << "From base: " << once << std::endl;
+	for (size_t i = 0; i < response.size(); i++)
+	{
+		for (size_t j = 0; j < response[i].get_size(); j++)
+		{
+			std::cout << response[i][j].to_string() << " ";
+		}
+		std::cout << std::endl;
+	}
 }
 
-template <typename T, typename... Rest>
-void bar(T first, Rest... rest)
+void foo()
 {
-    std::cout << "From recursive: " << first << std::endl;
-    bar(rest...);
-}
+	using namespace vdb;
 
+	Row row_1(11, 2);
+	Row row_2(31, 5);
+	Row row_3(187, 52);
+	Row row_4(81, 56);
+
+	Row rows[4];
+
+	rows[0] = row_1;
+	rows[1] = row_2;
+	rows[2] = row_3;
+	rows[3] = row_4;
+
+	Response resp(rows, 4);
+
+	print_response(resp);
+}
 
 int main()
 {
-    //vdb::column cols[size]{{INT, "id"}, {INT, "weight"}, {CHAR, "grade"}, {STR32, "name"}};
-    //vdb::make_db("testdb.vdb", cols, size);
 
+	foo();
 
-    //bar(1, 2, 3, 4, 5, 6);
-
-
-    vdb::meta *table = vdb::open_db("testdb.vdb");
-
-    /*vdb::clear_db(table);
-
-    vdb::make_record(table, "0 52 `A` `Mackenzie Davis_1`");
-    vdb::make_record(table, "1 54 `B` `Mackenzie Davis_2`");
-    vdb::make_record(table, "2 56 `C` `Mackenzie Davis_3`");*/
-
-    //const uint8_t size = 4;
-    //vdb::Value vals[size] = {3, 123, 'C', "Tarararata"};
-
-    vdb::Row row_2(7, 220, 'Z', "Dasha! Dasha! Dasha! Dasha! Dasha! Dasha! Dasha!"); // Can't use str64
-
-
-    vdb::insert_into(table, row_2);
-
-    vdb::show_db(table);
-
-    vdb::close_db(table);
     std::cin.get();
     return 0;
 }
