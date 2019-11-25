@@ -15,7 +15,7 @@ enum coltype
 #include <tuple>
 
 template<typename... Args>
-auto foo(Args... args)
+auto bar(Args... args)
 {
     return std::make_tuple(args...);
 }
@@ -32,14 +32,26 @@ void print_response(vdb::Response &response)
 	}
 }
 
+void print_rows(vdb::Row *row, size_t size)
+{
+	for (size_t i = 0; i < size; ++i)
+	{
+		for (size_t j = 0; j < row[i].get_size(); ++j)
+		{
+			std::cout << row[i][j].to_string() << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+
 void foo()
 {
 	using namespace vdb;
 
-	Row row_1(11, 2);
-	Row row_2(31, 5);
-	Row row_3(187, 52);
-	Row row_4(81, 56);
+	Row row_1('f', "azak");
+	Row row_2("alala", 5.4);
+	Row row_3(12, 'h');
+	Row row_4(8841, 1488);
 
 	Row rows[4];
 
@@ -53,10 +65,25 @@ void foo()
 	print_response(resp);
 }
 
+
+// Got to be included in vdb_api later
+#include "vdb_table.h"
+
 int main()
 {
+	vdb::Table table;
 
-	foo();
+	table.open("vladesire");
+
+	vdb::Row row(1, 2, "Dasha");
+
+	table.insert_into(row);
+
+	vdb::Response r = table.select();
+
+	print_response(r);
+
+	table.close();
 
     std::cin.get();
     return 0;

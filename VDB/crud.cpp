@@ -264,7 +264,7 @@ void vdb::get_record(vdb::meta *db, vdb::vrecord &vec, int line)
             {
                 double buff;
                 db->file->read((char *)&buff, 8);
-                vec.push_back(vdb::Value(buff)); // FIX DOUBLE() FIRST!!!
+                vec.push_back(vdb::Value(buff));
             }; break;
             case 2:
             {

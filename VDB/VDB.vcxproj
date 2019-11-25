@@ -77,6 +77,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,10 +128,15 @@
     <ClCompile Include="crud.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="vdb_response.cpp" />
+    <ClCompile Include="vdb_row.cpp" />
+    <ClCompile Include="vdb_table.cpp" />
+    <ClCompile Include="vdb_value.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="file.vdb" />
     <None Include="testdb.vdb" />
+    <None Include="vladesire.vdb" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crud.h" />
