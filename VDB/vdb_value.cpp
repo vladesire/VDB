@@ -64,6 +64,15 @@ vdb::Value::Value(const char *val)
 	buff = new char[type == 3 ? 32 : 64];
 	memcpy(buff, val, type == 3 ? 32 : 64);
 }
+uint8_t vdb::Value::get_type()
+{
+	return type;
+}
+void vdb::Value::reset()
+{
+	delete[] buff;
+	buff = nullptr;
+}
 vdb::Value::operator int() const
 {
 	return int_val();
@@ -82,6 +91,8 @@ vdb::Value::operator char *() const
 }
 std::string vdb::Value::to_string()
 {
+	if (buff == nullptr)
+		return std::string("null");
 	switch (type)
 	{
 		case 0:

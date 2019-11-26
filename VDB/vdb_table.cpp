@@ -48,6 +48,7 @@ bool vdb::Table::open(const std::string &name)
 	for (int i = 0; i < colcount; i++)
 	{
 		file.read((char *)&(cols[i].type), 1);
+		cols[i].size = (cols[i].type == 0) ? 4 : (cols[i].type == 1 ? 8 : (cols[i].type == 2 ? 1 : cols[i].type == 3 ? 32 : 64));
 		file.read((char *)&(cols[i].name), 32);
 	}
 
@@ -130,9 +131,17 @@ void vdb::Table::insert_into(vdb::Value *vals)
 	// TODO: check if vals is valid (colcount) + think about auto-value in row (like null by default or autoincrement)
 	file.seekp(0, std::ios::end);
 
-	// IT DOESN'T WORK!!!
 	for (int i = 0; i < colcount; i++)
 	{
+		if (vals[i].get_type() != cols[i].type)
+		{
+			// Null value must be set if its possible (not_null = false)
+
+			char a = 0;
+
+			for (int i = 0; i < cols[i].size; ++i)
+				file.write(&a, 1);
+		}
 		switch (cols[i].type)
 		{
 			// (char *)vals[i] will return pointer to vdb::Value inner buffer that contain the value
@@ -159,9 +168,19 @@ void vdb::Table::insert_into(vdb::Row &row)
 	// TODO: check if vals is valid (colcount) + think about auto-value in row (like null by default or autoincrement)
 	file.seekp(0, std::ios::end);
 
-	// IT DOESN'T WORK!!!
 	for (int i = 0; i < colcount; i++)
 	{
+		if (row[i].get_type() != cols[i].type)
+		{
+			// Null value must be set if its possible (not_null = false)
+
+			char a = 0;
+
+			for (int k = 0; k < cols[i].size; ++k)
+				file.write(&a, 1);
+
+			continue;
+		}
 		switch (cols[i].type)
 		{
 			// (char *)vals[i] will return pointer to vdb::Value inner buffer that contain the value
@@ -181,4 +200,148 @@ void vdb::Table::insert_into(vdb::Row &row)
 	++rowcount;
 	file.write((char *)&rowcount, 2);
 	file.seekp(0);
+}
+
+void vdb::Table::clear()
+{
+	char *buff = new char[meta_size];
+
+	file.read(buff, meta_size);
+
+	file.close();
+	file.open(file_name, std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
+
+	rowcount = 0;
+
+	buff[3] = 0; // to set rowcount zero
+	buff[4] = 0;
+
+	file.write(buff, meta_size);
+	file.seekp(0);
+	delete[] buff;
+}
+
+void vdb::Table::remove_line(size_t line)
+{
+	if (line < 0 || line >= rowcount)
+		return;
+
+	int db_size = meta_size + (rowsize * rowcount);
+
+	char *buffer = new char[db_size];
+
+	file.read(buffer, db_size);
+
+	file.close();
+	file.open(file_name, std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
+
+	int part_1 = meta_size + (rowsize * line);
+	int part_2 = rowsize * (rowcount + 1 - line);
+
+	file.write(buffer, part_1);
+	file.write(buffer + rowsize + part_1, part_2);
+
+	delete[] buffer;
+
+	file.seekp(3);
+	--rowcount;
+	file.write((char *)&rowcount, 2);
+	file.seekp(0);
+}
+
+bool vdb::create_db(const std::string &desc)
+{
+	std::string str;
+	std::fstream file;
+
+	// pos1 ... pos2
+	int pos2 = desc.find_first_of('`', 1);
+	int pos1;
+
+	// db path with name
+	str = desc.substr(1, pos2 - 1);
+
+	file.open(str, std::ios::binary | std::ios::out);
+
+	if (!file.is_open())
+		return false;
+
+	uint16_t two_bytes;
+	pos1 = pos2;
+	pos2 = desc.find_first_of(' ', pos1 + 2);
+	uint8_t colcount = std::stoi(desc.substr(pos1 + 2, pos2 - pos1));
+
+	//meta size
+	two_bytes = 7 + (33 * colcount);
+
+	file.write((char *)&two_bytes, 2);
+	file.write((char *)&colcount, 1);
+
+	two_bytes = 0;
+	// number of rows (= 0)
+	file.write((char *)&two_bytes, 2);
+
+	int colsize[] = {4, 8, 1, 32, 64};
+
+	uint16_t rowsize = 0;
+
+	std::string name;
+
+	for (int i = 0, type; i < colcount; i++)
+	{
+		pos1 = pos2;
+		pos2 = desc.find_first_of(' ', pos1 + 1);
+		type = std::stoi(desc.substr(pos1 + 1, pos2 - pos1));
+		rowsize += colsize[type];
+		file.write((char *)&type, 1);
+		pos1 = pos2 + 2;
+		pos2 = desc.find_first_of('`', pos1);
+		name = desc.substr(pos1, pos2 - pos1); // SUBSTR (pos2, LENGTH!!!!) FFFFUUUUUUUUCK
+		file.write(name.c_str(), 32);
+		++pos2;
+	}
+
+	// write rowsize
+	file.write((char *)&rowsize, 2);
+
+	file.close();
+
+	return true;
+}
+bool vdb::create_db(const char *db_path, vdb::column *cols, uint8_t colcount)
+{
+	std::fstream file;
+	file.open(db_path, std::ios::binary | std::ios::out);
+
+	if (!file.is_open())
+		return false;
+
+	uint16_t two_bytes;
+
+	//meta size
+	two_bytes = 7 + (33 * colcount);
+
+	file.write((char *)&two_bytes, 2);
+	file.write((char *)&colcount, 1);
+
+	two_bytes = 0;
+	// number of rows (= 0)
+	file.write((char *)&two_bytes, 2);
+
+	int colsize[] = {4, 8, 1, 32, 64}; // int, double, char, str32, str64
+	uint16_t rowsize = 0;
+
+	for (int i = 0; i < colcount; i++)
+	{
+		file.write((char *)&cols[i].type, 1);
+		file.write((char *)&cols[i].name, 32);
+		rowsize += colsize[cols[i].type];
+	}
+
+	// write rowsize
+	file.write((char *)&rowsize, 2);
+
+	file.close();
+
+	return true;
 }

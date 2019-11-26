@@ -54,3 +54,15 @@ vdb::Response::~Response()
 {
 	delete[] row;
 }
+
+vdb::Response &vdb::Response::where(std::string &condition)
+{
+
+	return *this;
+}
+
+vdb::Response &vdb::Response::where(const char *condition)
+{
+
+	return *this;
+}

@@ -12,10 +12,14 @@
 namespace vdb
 {
 
+bool create_db(const std::string &desc);
+bool create_db(const char *db_path, vdb::column *cols, uint8_t colcount);
+
 typedef struct
 {
 	uint8_t type;
 	char name[32];
+	uint8_t size;
 } column__; // Name will be fixed... (And in open() function)
 
 class Table
@@ -49,8 +53,8 @@ public:
 
 	Response select();
 	void remove();
-
-
+	void remove_line(size_t line);
+	void clear();
 };
 
 

@@ -4,7 +4,7 @@
 
 enum coltype
 {
-    INT = 0, DOUBLE, CHAR, STR32, STR64
+    INT = 0, DOUBLE, CHAR, STR32, STR64 // Null = 0?
 };
 
 /*
@@ -75,11 +75,21 @@ int main()
 
 	table.open("vladesire");
 
-	vdb::Row row(1, 2, "Dasha");
+	//table.clear();
+
+	vdb::Row row(1, 3, "Alright?");
+	vdb::Row row_2(2, 3, "Alright?");
+	vdb::Row row_3(3, 3, "Alright?");
+	vdb::Row row_4(4, 3, "Alright?");
 
 	table.insert_into(row);
+	table.insert_into(row_2);
+	table.insert_into(row_3);
+	table.insert_into(row_4);
 
-	vdb::Response r = table.select();
+	table.remove_line(2);
+
+	vdb::Response r = table.select().where("");
 
 	print_response(r);
 

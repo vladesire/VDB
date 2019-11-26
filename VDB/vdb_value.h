@@ -25,6 +25,8 @@ public:
     Value(char val);
     Value(char *val, int size);
     Value(const char *val);
+	uint8_t get_type();
+	void reset();
     operator int() const;
     operator double() const;
     operator char() const;
