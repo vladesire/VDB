@@ -46,23 +46,11 @@ vdb::Row &vdb::Response::operator[](const size_t index)
 	else
 		throw std::invalid_argument("Vse perepleteno");
 }
-size_t vdb::Response::size()
+uint16_t vdb::Response::size()
 {
 	return row_count;
 }
 vdb::Response::~Response()
 {
 	delete[] row;
-}
-
-vdb::Response &vdb::Response::where(std::string &condition)
-{
-
-	return *this;
-}
-
-vdb::Response &vdb::Response::where(const char *condition)
-{
-
-	return *this;
 }

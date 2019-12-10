@@ -75,6 +75,8 @@ void vdb::Value::reset()
 }
 vdb::Value::operator int() const
 {
+	if (type == 1)
+		return static_cast<int>(double_val());
 	return int_val();
 }
 vdb::Value::operator double() const

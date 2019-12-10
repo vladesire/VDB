@@ -66,7 +66,7 @@ public:
 		return *this;
 	}
 
-	Value &operator[](size_t index);
+	Value &operator[](const uint8_t index);
 	void resize(size_t size_);
     size_t get_size();
     ~Row();

@@ -35,7 +35,7 @@ vdb::Row &vdb::Row::operator=(const vdb::Row &row)
 	}
 	return *this;
 }
-vdb::Value &vdb::Row::operator[](size_t index)
+vdb::Value &vdb::Row::operator[](const uint8_t index)
 {
 	if (index < size)
 		return values[index];

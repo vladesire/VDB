@@ -72,7 +72,7 @@ void vdb::Table::close()
 	opened = false;
 }
 
-vdb::Response vdb::Table::select()
+vdb::Response vdb::Table::select_all()
 {
 	vdb::Row *rows = new vdb::Row[rowcount];
 
@@ -200,6 +200,44 @@ void vdb::Table::insert_into(vdb::Row &row)
 	++rowcount;
 	file.write((char *)&rowcount, 2);
 	file.seekp(0);
+}
+
+vdb::Response vdb::Table::select_where(std::string &condition)
+{
+	// All blanks must be truncated
+	for (auto it = condition.begin(); it != condition.end(); ++it)
+		if (*it == ' ')
+			condition.erase(it--);
+
+	Node *root = new Node;
+
+	vdb::Response resp = select_all(); // REPLACE IT
+
+	set_tree(condition, root, cols, colcount);
+
+	uint16_t match_count = 0;
+	vdb::Row *match_indexes = new vdb::Row[resp.size()]; // I SHOULD STORE ONLY POINTERS TO THE ROWS, NOT VALUES ITSELF (OR NOT???)
+
+	for (uint16_t i = 0; i < resp.size(); i++)
+		if (is_match(resp[i], root))
+			match_indexes[match_count++] = resp[i]; // sizeof(vdb::Row) > sizeof(vdb::Row *), but should I define operator= for pointers copy?
+
+	vdb::Response new_response(match_indexes, match_count);
+
+	resp = new_response;
+
+	delete[] match_indexes;
+	destroy_tree(root);
+
+	return resp;
+
+	return resp;
+}
+
+vdb::Response vdb::Table::select_where(const char *condition)
+{
+	std::string cond(condition);
+	return select_where(cond);
 }
 
 void vdb::Table::clear()

@@ -5,6 +5,7 @@
 #include "vdb_value.h"
 #include "vdb_row.h"
 #include "vdb_response.h"
+#include "vdb_table.h"
 #include "crud.h"
 #include "utils.h"
 
