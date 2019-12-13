@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include "vdb_value.h"
-#include "meta.h"
+#include <stdexcept>
 
 namespace vdb
 {

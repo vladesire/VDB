@@ -18,12 +18,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="crud.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vdb_response.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -56,15 +50,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vdb_api.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="meta.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="crud.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vdb_response.h">

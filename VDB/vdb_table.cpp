@@ -5,18 +5,71 @@ vdb::Table::Table()
 	opened = false;
 }
 
-// TODO:
 vdb::Table::Table(const Table &table)
 {
-	//TO BE DONE
+	if (!table.opened)
+	{
+		opened = false;
+	}
+	else
+	{
+		meta_size = table.meta_size;
+		colcount = table.colcount;
+		rowcount = table.rowcount;
+		rowsize = table.rowsize;
+
+		cols = new vdb::column[colcount];
+
+		for (size_t i = 0; i < colcount; ++i)
+		{
+			strcpy(cols[i].name, table.cols[i].name);
+			cols[i].type = table.cols[i].type;
+			cols[i].size = table.cols[i].size;
+		}
+
+		file_name = table.file_name;
+
+		if (file_name.substr(file_name.length() - 4, 4) != ".vdb")
+			file_name.append(".vdb");
+
+		file.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
+
+		opened = true;
+	}
 }
-// TODO:
 vdb::Table &vdb::Table::operator=(const vdb::Table &table)
 {
-	//TO BE DONE
+	if (!table.opened)
+	{	
+		opened = false;
+	}
+	else
+	{
+		meta_size = table.meta_size;
+		colcount = table.colcount;
+		rowcount = table.rowcount;
+		rowsize = table.rowsize;
+
+		cols = new vdb::column[colcount];
+
+		for (size_t i = 0; i < colcount; ++i)
+		{
+			strcpy(cols[i].name, table.cols[i].name);
+			cols[i].type = table.cols[i].type;
+			cols[i].size = table.cols[i].size;
+		}
+
+		file_name = table.file_name;
+
+		if (file_name.substr(file_name.length() - 4, 4) != ".vdb")
+			file_name.append(".vdb");
+
+		file.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
+
+		opened = true;
+	}
 	return *this;
 }
-
 vdb::Table::~Table()
 {
 	if (opened)
@@ -43,7 +96,7 @@ bool vdb::Table::open(const std::string &name)
 	file.read((char *)&colcount, 1);
 	file.read((char *)&rowcount, 2);
 
-	cols = new vdb::column__[colcount];
+	cols = new vdb::column[colcount];
 
 	for (int i = 0; i < colcount; i++)
 	{
@@ -117,6 +170,7 @@ vdb::Response vdb::Table::select_all()
 			}
 		}
 	}
+
 
 	vdb::Response resp(rows, rowcount);
 
@@ -202,18 +256,409 @@ void vdb::Table::insert_into(vdb::Row &row)
 	file.seekp(0);
 }
 
+static inline void ltrim(std::string &s)
+{
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch)
+	{
+		return !std::isspace(ch);
+	}));
+}
+void vdb::unescape(std::string &str) // \" -> ", \' -> ', etc.
+{
+	for (auto it = str.begin(); it != str.end(); ++it)
+	{
+		if (*it == '\\')
+		{
+			str.erase(it);
+		}
+	}
+}
+void vdb::destroy_tree(struct vdb::Node *node)
+{
+	if (node != nullptr)
+	{
+		destroy_tree(node->left);
+		destroy_tree(node->right);
+		delete node;
+	}
+}
+
+
+//TODO INSIDE
+void vdb::Table::set_tree(std::string str, vdb::Node *tree)
+{
+	uint8_t nesting_level = 0;
+	bool operations_left = false;
+
+	// To remove wrapping brackets, for example (a > b), crucial for function to work
+	// It should also distingiush something like (a == b) && (c < d) from wrapping brackets
+	// UPD: Got to be improved. There're problems with 3 or above levels of nesting <-------------------------------------------------
+	if (str[0] == '(' && str[str.length() - 1] == ')')
+	{
+		// If there's ')' braket, but '(' braket (open = false) doesn't accured, no action should be done
+		bool open = false, error = false;
+		// skip first and last character
+		for (size_t i = 1; i < str.length() - 1; ++i)
+		{
+			if (str[i] == '(')
+			{
+				open = true;
+			}
+			else if (str[i] == ')')
+			{
+				if (!open)
+				{
+					error = true;
+					break;
+				}
+				else
+					open = false;
+			}
+		}
+
+		if (!error)
+			str = str.substr(1, str.length() - 2);
+	}
+
+
+	for (size_t i = 0; i < str.length(); ++i)
+	{
+		if (str[i] == '(') // TODO: I should do the same for " ", ' ', and ` ` !!!!! <-----------------------------------------------
+		{
+			++nesting_level; // If nesting_level != 0 I shouldn't replace escaped character with their real value.
+		}
+		else if (str[i] == ')')
+		{
+			--nesting_level;
+		}
+		else if (str[i] == '`')
+		{
+			while (str[++i] != '`')
+				if (str[i] == '\\' && (i + 1) < str.length() && (i + 2) != str.length())
+					++i;
+		}
+		else if (str[i] == '\"')
+		{
+			while (str[++i] != '\"')
+				if (str[i] == '\\' && (i + 1) < str.length() && (i + 2) != str.length())
+					++i;
+		}
+		else if ((str[i] == '=' && str[i + 1] == '=') || (str[i] == '!' && str[i + 1] == '=') || str[i] == '>' || str[i] == '<' || (str[i] == '>' && str[i + 1] == '=') || (str[i] == '<' && str[i + 1] == '='))
+		{
+			operations_left = true;
+		}
+		else if ((str[i] == '&' || str[i] == '|') && nesting_level == 0)
+		{
+			tree->value = str[i];
+			tree->left = new Node();
+			tree->right = new Node();
+			set_tree(str.substr(0, i), tree->left);
+			set_tree(str.substr(i + 2, str.length() - i - 2), tree->right);
+			return;
+		}
+	}
+
+	nesting_level = 0;
+
+	// If there's no &&, || operations.
+	if (operations_left)
+	{
+		for (size_t i = 0; i < str.length(); ++i)
+		{
+			if (str[i] == '(')
+			{
+				++nesting_level;
+			}
+			else if (str[i] == ')')
+			{
+				--nesting_level;
+			}
+			else if (str[i] == '`')
+			{
+				while (str[++i] != '`')
+					if (str[i] == '\\' && (i + 1) < str.length() && (i + 2) != str.length())
+						++i;
+			}
+			else if (str[i] == '\"')
+			{
+				while (str[++i] != '\"')
+					if (str[i] == '\\' && (i + 1) < str.length() && (i + 2) != str.length())
+						++i;
+			}
+			else if (((str[i] == '=' && str[i + 1] == '=') || (str[i] == '!' && str[i + 1] == '=') || str[i] == '>' || str[i] == '<' || (str[i] == '>' && str[i + 1] == '=') || (str[i] == '<' && str[i + 1] == '=')) && nesting_level == 0)
+			{
+				uint8_t is_double_char = 0; // to get correct substring when operator is two character long (<= and >=)
+				if (str[i] == '>' && str[i + 1] == '=')
+				{
+					tree->value = 'g';
+					is_double_char = 1;
+				}
+				else if (str[i] == '<' && str[i + 1] == '=')
+				{
+					tree->value = 'l';
+					is_double_char = 1;
+				}
+				else if (str[i] == '!' && str[i + 1] == '=')
+				{
+					tree->value = '!';
+					is_double_char = 1;
+				}
+				else if (str[i] == '=' && str[i + 1] == '=')
+				{
+					tree->value = '=';
+					is_double_char = 1;
+				}
+				else
+					tree->value = str[i];
+
+				tree->left = new Node();
+				tree->right = new Node();
+				set_tree(str.substr(0, i), tree->left);
+				set_tree(str.substr(i + 1 + is_double_char, str.length() - i - 1 - is_double_char), tree->right);
+				return;
+			}
+		}
+	}
+	else
+	{
+		if (str[0] == '`') // column name
+		{
+			str = str.substr(1, str.length() - 2);
+
+			unescape(str);
+
+			for (uint8_t i = 0; i < colcount; i++)
+			{
+				if (std::strcmp(str.c_str(), cols[i].name) == 0)
+				{
+					tree->value = i;
+					return;
+				}
+			}
+
+			tree->value = uint8_t(0xFF); // To indicate that there's no column with such name
+			std::cout << "Fuck you!" << std::endl;
+			// TODO:
+			// DO SOMETHING WHEN THERE'S NO SUCH COLUMNS.
+			// Maybe use the value of 255 to indicate that there's no columns
+		}
+		else if (str[0] == '\'') // char value
+		{
+			vdb::Value val(str[1]);
+			tree->value = val;
+		}
+		else if (str[0] == '\"') // string value
+		{
+			str = str.substr(1, str.length() - 2);
+			unescape(str);
+			vdb::Value val(str.c_str());
+			tree->value = val;
+		}
+		else // int or double value
+		{
+			// TODO: try/catch to catch bad argument exception if any
+			try
+			{
+				vdb::Value val(std::stod(str));
+				tree->value = val;
+			}
+			catch (const std::exception &)
+			{
+				std::cout << "I TRUSTED YOU!!!!!" << std::endl;
+				vdb::Value val(0);
+				tree->value = val;
+			}
+
+		}
+	}
+}
+
+bool vdb::is_match(vdb::Row &row, const vdb::Node *tree)
+{
+	if (tree->value.index() == 0 || tree->value.index() == 1)
+		return false;
+	if (tree->value.index() == 2)
+	{
+		if ((std::get<char>(tree->value) != '&') && (std::get<char>(tree->value) != '|'))
+		{
+			if ((tree->left->value.index() == 0? std::get<uint8_t>(tree->right->value): std::get<uint8_t>(tree->left->value)) == 0xFF)
+				return false; // return false if there's no column with such name (look set_tree()), 0xFF is indicator.
+
+			switch (std::get<char>(tree->value))
+			{
+				case '=':
+				{
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					{
+						case 0:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->left->value)) : static_cast<int>(row[std::get<uint8_t>(tree->left->value)])) == (tree->right->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->right->value)) : static_cast<int>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 1:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->left->value)) : static_cast<double>(row[std::get<uint8_t>(tree->left->value)])) == (tree->right->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->right->value)) : static_cast<double>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 2:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<char>(std::get<vdb::Value>(tree->left->value)) : static_cast<char>(row[std::get<uint8_t>(tree->left->value)])) == (tree->right->value.index() == 0 ? static_cast<char>(std::get<vdb::Value>(tree->right->value)) : static_cast<char>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 3:
+						case 4:
+						{
+							// strcmp() returns 0 if strings are equals.
+							return !static_cast<bool>(std::strcmp((tree->left->value.index() == 0 ? static_cast<char *>(std::get<vdb::Value>(tree->left->value)) : static_cast<char *>(row[std::get<uint8_t>(tree->left->value)])), (tree->right->value.index() == 0 ? static_cast<char *>(std::get<vdb::Value>(tree->right->value)) : static_cast<char *>(row[std::get<uint8_t>(tree->right->value)]))));
+						}; break;
+						default:
+						{
+							// Maybe I should write something here?
+						}
+					}
+				}; break;
+				case '!':
+				{
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					{
+						case 0:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->left->value)) : static_cast<int>(row[std::get<uint8_t>(tree->left->value)])) != (tree->right->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->right->value)) : static_cast<int>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 1:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->left->value)) : static_cast<double>(row[std::get<uint8_t>(tree->left->value)])) != (tree->right->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->right->value)) : static_cast<double>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 2:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<char>(std::get<vdb::Value>(tree->left->value)) : static_cast<char>(row[std::get<uint8_t>(tree->left->value)])) != (tree->right->value.index() == 0 ? static_cast<char>(std::get<vdb::Value>(tree->right->value)) : static_cast<char>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 3:
+						case 4:
+						{
+							// strcmp() returns 0 if strings are equals.
+							return static_cast<bool>(std::strcmp((tree->left->value.index() == 0 ? static_cast<char *>(std::get<vdb::Value>(tree->left->value)) : static_cast<char *>(row[std::get<uint8_t>(tree->left->value)])), (tree->right->value.index() == 0 ? static_cast<char *>(std::get<vdb::Value>(tree->right->value)) : static_cast<char *>(row[std::get<uint8_t>(tree->right->value)]))));
+						}; break;
+						default:
+						{
+							// Maybe I should write something here?
+						}
+					}
+				}; break;
+				case '>':
+				{
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					{
+						case 0:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->left->value)) : static_cast<int>(row[std::get<uint8_t>(tree->left->value)])) > (tree->right->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->right->value)) : static_cast<int>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 1:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->left->value)) : static_cast<double>(row[std::get<uint8_t>(tree->left->value)])) > (tree->right->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->right->value)) : static_cast<double>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						default:
+						{
+							// Maybe I should write something here?
+						}
+					}
+				}; break;
+				case '<':
+				{
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					{
+						case 0:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->left->value)) : static_cast<int>(row[std::get<uint8_t>(tree->left->value)])) < (tree->right->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->right->value)) : static_cast<int>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 1:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->left->value)) : static_cast<double>(row[std::get<uint8_t>(tree->left->value)])) < (tree->right->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->right->value)) : static_cast<double>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						default:
+						{
+							// Maybe I should write something here?
+						}
+					}
+				}; break;
+				case 'g': // >=
+				{
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					{
+						case 0:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->left->value)) : static_cast<int>(row[std::get<uint8_t>(tree->left->value)])) >= (tree->right->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->right->value)) : static_cast<int>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 1:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->left->value)) : static_cast<double>(row[std::get<uint8_t>(tree->left->value)])) >= (tree->right->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->right->value)) : static_cast<double>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						default:
+						{
+							// Maybe I should write something here?
+						}
+					}
+				}; break;
+				case 'l': // <=
+				{
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					{
+						case 0:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->left->value)) : static_cast<int>(row[std::get<uint8_t>(tree->left->value)])) <= (tree->right->value.index() == 0 ? static_cast<int>(std::get<vdb::Value>(tree->right->value)) : static_cast<int>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						case 1:
+						{
+							return (tree->left->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->left->value)) : static_cast<double>(row[std::get<uint8_t>(tree->left->value)])) <= (tree->right->value.index() == 0 ? static_cast<double>(std::get<vdb::Value>(tree->right->value)) : static_cast<double>(row[std::get<uint8_t>(tree->right->value)]));
+						}; break;
+						default:
+						{
+							// Maybe I should write something here?
+						}
+					}
+				}; break;
+				default:
+					break;
+			}
+		}
+	}
+
+	bool op_1 = is_match(row, tree->left);
+	bool op_2 = is_match(row, tree->right);
+
+	if (std::get<char>(tree->value) == '|')
+		return op_1 || op_2;
+	else
+		return op_1 && op_2;
+
+}
+
+// TODO INSIDE!!!
 vdb::Response vdb::Table::select_where(std::string &condition)
 {
-	// All blanks must be truncated
-	for (auto it = condition.begin(); it != condition.end(); ++it)
-		if (*it == ' ')
+	// All excess blanks must be truncated
+	ltrim(condition); // without it mechanism crashes because iterator can't be decremented under the condition.begin()
+	for (auto it = condition.begin(); it != condition.end(); ++it) // TODO: The leading blank will fuck my algorithm
+	{
+		if (*it == '`')
+		{
+			while (*(++it) != '`')
+				if (*it == '\\' && (it + 1) != condition.end() && (it + 2) != condition.end())
+					++it;
+		}
+		else if (*it == '\"')
+		{
+			while (*(++it) != '\"')
+				if (*it == '\\' && (it + 1) != condition.end() && (it + 2) != condition.end())
+					++it;
+		}
+		else if (*it == ' ')
+		{
 			condition.erase(it--);
-
+		}
+	}
 	Node *root = new Node;
 
 	vdb::Response resp = select_all(); // REPLACE IT
 
-	set_tree(condition, root, cols, colcount);
+	set_tree(condition, root);
 
 	uint16_t match_count = 0;
 	vdb::Row *match_indexes = new vdb::Row[resp.size()]; // I SHOULD STORE ONLY POINTERS TO THE ROWS, NOT VALUES ITSELF (OR NOT???)
@@ -264,7 +709,7 @@ void vdb::Table::remove_line(size_t line)
 	if (line < 0 || line >= rowcount)
 		return;
 
-	int db_size = meta_size + (rowsize * rowcount);
+	size_t db_size = meta_size + (rowsize * rowcount);
 
 	char *buffer = new char[db_size];
 
@@ -287,17 +732,26 @@ void vdb::Table::remove_line(size_t line)
 	file.seekp(0);
 }
 
-bool vdb::create_db(const std::string &desc)
+bool vdb::create_db(std::string &desc) //check if desc has correct syntax
 {
 	std::string str;
 	std::fstream file;
 
+	ltrim(desc);
+
 	// pos1 ... pos2
-	int pos2 = desc.find_first_of('`', 1);
-	int pos1;
+	size_t pos1;
+	size_t pos2 = 0;
+	while (desc[++pos2] != '`') // to skip all escaped `
+	{
+		if (desc[pos2] == '\\')
+			++pos2;
+	}
 
 	// db path with name
 	str = desc.substr(1, pos2 - 1);
+
+	unescape(str); // \` -> `, \\ -> \
 
 	file.open(str, std::ios::binary | std::ios::out);
 
@@ -333,8 +787,15 @@ bool vdb::create_db(const std::string &desc)
 		rowsize += colsize[type];
 		file.write((char *)&type, 1);
 		pos1 = pos2 + 2;
-		pos2 = desc.find_first_of('`', pos1);
-		name = desc.substr(pos1, pos2 - pos1); // SUBSTR (pos2, LENGTH!!!!) FFFFUUUUUUUUCK
+		pos2 = pos1 - 1;
+		//pos2 = desc.find_first_of('`', pos1);
+		while (desc[++pos2] != '`') // to skip all escaped `
+		{
+			if (desc[pos2] == '\\')
+				++pos2;
+		}
+		name = desc.substr(pos1, pos2 - pos1);
+		unescape(name);
 		file.write(name.c_str(), 32);
 		++pos2;
 	}
@@ -345,6 +806,11 @@ bool vdb::create_db(const std::string &desc)
 	file.close();
 
 	return true;
+}
+bool vdb::create_db(const char *desc)
+{
+	std::string str(desc);
+	return create_db(str);
 }
 bool vdb::create_db(const char *db_path, vdb::column *cols, uint8_t colcount)
 {

@@ -125,9 +125,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="crud.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="utils.cpp" />
     <ClCompile Include="vdb_response.cpp" />
     <ClCompile Include="vdb_row.cpp" />
     <ClCompile Include="vdb_table.cpp" />
@@ -139,9 +137,6 @@
     <None Include="vladesire.vdb" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crud.h" />
-    <ClInclude Include="meta.h" />
-    <ClInclude Include="utils.h" />
     <ClInclude Include="vdb_api.h" />
     <ClInclude Include="vdb_response.h" />
     <ClInclude Include="vdb_row.h" />
