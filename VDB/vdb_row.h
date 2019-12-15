@@ -11,40 +11,25 @@ class Row
 {
 private:
     Value *values = nullptr;
-	size_t pointer = 0; // points to the current array index (needed for push_back())
+    size_t pointer = 0; // points to the current array index (needed for push_back())
     size_t size = 0;
     
     template <typename T>
-    void count_size(T val)        
-    {
-        ++size;
-        return;
-    }
+    void count_size(T val) { ++size; }
+
     template <typename T, typename... Rest>
-    void count_size(T val, Rest... rest)
-    {
-        ++size;
-        count_size(rest...);
-        return;
-    }
+    void count_size(T val, Rest... rest) { ++size; count_size(rest...); }
+
     template <typename T>
-    void get_value(T val)         
-    {
-        push_back(val);
-        return;
-    }
+    void get_value(T val) { push_back(val); }
+
     template <typename T, typename... Rest>
-    void get_value(T val, Rest... rest)
-    {
-        push_back(val);
-        get_value(rest...);
-        return;
-    }
+    void get_value(T val, Rest... rest) { push_back(val); get_value(rest...); }
 public:
 	Row();
-    Row(size_t size_);
+	Row(size_t size_);
 
-    template <typename... Args>
+	template <typename... Args>
 	Row(Args... args)
 	{
 		count_size(args...);
@@ -52,11 +37,11 @@ public:
 		get_value(args...);
 	}
 
-    Row(const Row &row);
-    Row &operator=(const Row &row);
+	Row(const Row &row);
+	Row &operator=(const Row &row);
 
-    template <typename T>
-    Row &push_back(T val) // doesn't work
+	template <typename T>
+	Row &push_back(T val)
 	{
 		if (pointer < size)
 		{
@@ -68,8 +53,8 @@ public:
 
 	Value &operator[](const uint8_t index);
 	void resize(size_t size_);
-    size_t get_size();
-    ~Row();
+	size_t get_size();
+	~Row();
 };
 
 }

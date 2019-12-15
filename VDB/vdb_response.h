@@ -1,4 +1,3 @@
-#pragma once
 #ifndef VDB_RESPONSE_H_
 #define VDB_RESPONSE_H_
 
@@ -15,7 +14,7 @@ private:
 	uint16_t row_count;
 public:
 	Response();
-	Response(Row *row_, size_t row_count_);
+	Response(Row *row_, uint16_t row_count_);
 	Response(const Response &resp);
 	Response &operator=(const Response &resp);
 	Row &operator[](const size_t index);

@@ -1,7 +1,7 @@
 #include "vdb_response.h"
 
 vdb::Response::Response() { }
-vdb::Response::Response(vdb::Row *row_, size_t row_count_)
+vdb::Response::Response(vdb::Row *row_, uint16_t row_count_)
 {
 	row_count = row_count_;
 
@@ -13,8 +13,8 @@ vdb::Response::Response(vdb::Row *row_, size_t row_count_)
 vdb::Response::Response(const vdb::Response &resp)
 {
 	row_count = resp.row_count;
+	
 	delete[] row;
-
 	row = new vdb::Row[row_count];
 
 	for (int i = 0; i < row_count; ++i)
@@ -28,8 +28,8 @@ vdb::Response &vdb::Response::operator=(const vdb::Response &resp)
 		return *this;
 
 	row_count = resp.row_count;
+	
 	delete[] row;
-
 	row = new vdb::Row[row_count];
 
 	for (int i = 0; i < row_count; ++i)

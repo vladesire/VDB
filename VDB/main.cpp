@@ -12,7 +12,6 @@ void print_response(vdb::Response &response)
 		std::cout << std::endl;
 	}
 }
-
 void print_rows(vdb::Row *row, size_t size)
 {
 	for (size_t i = 0; i < size; ++i)
@@ -33,16 +32,15 @@ TODO LIST:
 2. In vdb_table.cpp. Investigate remove_line().
 3. Add security to select_where(), to_tree(), is_match() function to handle bad query string.
 
-
 */
 
 int main()
 {
-	
-	/*vdb::create_db("`vladesire.vdb` 3 0 `id` 0 `age` 3 `surname`");*/
+	/*
+	//vdb::create_db("`vladesire.vdb` 3 0 `id` 0 `age` 3 `surname`");
 	vdb::Table table;
 	table.open("vladesire");
-	//table.clear();
+	table.clear();
 	vdb::Row row_1(1, 12, "Vladislav");
 	vdb::Row row_2(2, 12, "Vlad");
 	vdb::Row row_3(3, 12, "Vladesire");
@@ -84,20 +82,19 @@ int main()
 	table.insert_into(row_18);
 	table.insert_into(row_19);
 	table.insert_into(row_20);
-	//table.meta__();
 
-	table.remove_line(2); // PROBLEM <---------------------------------------
+	//table.remove_line(2); // PROBLEM <---------------------------------------
 
-	vdb::Response all = table.select_all();
+	//vdb::Response all = table.select_all();
 	//vdb::Response r = table.select_where("`string\"32\"` !\== \"ATLAS\\\"SHRUGGED\"");
-	//vdb::Response r = table.select_where(R"(`id` <= 7)");
+	vdb::Response r = table.select_where(R"(`id` <= 7)");
 
-	table.print_col_names();
 
-	print_response(all);
-	//print_response(r);
+	//print_response(all);
+	print_response(r);
+	table.close();
+	*/
 
-	//table.close();
 
 	std::cin.get();
 	return 0;

@@ -53,5 +53,6 @@ vdb::Row::~Row()
 void vdb::Row::resize(size_t size_)
 {
 	size = size_;
+	delete[] values;
 	values = new vdb::Value[size];
 }
