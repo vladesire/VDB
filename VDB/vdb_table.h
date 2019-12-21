@@ -22,6 +22,8 @@ bool create_db(std::string &desc);
 bool create_db(const char *desc);
 bool create_db(const char *db_path, vdb::column *cols, uint8_t colcount);
 
+int query_cout(std::string query);
+
 class Table
 {
 private:
@@ -46,6 +48,7 @@ public:
 	// File managment
 	bool open(const std::string &name);
 	void close();
+	vdb::Response vdb_query(std::string query); // IN DEVELOPMENT
 
 	// FOR DEBUG PURPOSES
 	void print_meta()
@@ -70,6 +73,8 @@ public:
 	// Create
 	void insert_into(Value *vals);
 	void insert_into(Row &row);
+	void insert_into(std::string &values);
+	void insert_into(const char *values);
 
 	// Read
 	Response select_where(std::string &condition);
