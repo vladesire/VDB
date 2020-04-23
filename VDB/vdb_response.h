@@ -1,9 +1,10 @@
 #ifndef VDB_RESPONSE_H_
 #define VDB_RESPONSE_H_
 
-#include "vdb_row.h"
 #include <cstring>
 #include <cstdint>
+#include "vdb_row.h"
+
 
 namespace vdb
 {

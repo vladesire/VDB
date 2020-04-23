@@ -78,6 +78,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,6 +130,7 @@
     <ClCompile Include="vdb_response.cpp" />
     <ClCompile Include="vdb_row.cpp" />
     <ClCompile Include="vdb_table.cpp" />
+    <ClCompile Include="vdb_utils.cpp" />
     <ClCompile Include="vdb_value.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -138,9 +140,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vdb_api.h" />
+    <ClInclude Include="vdb_query_proc.h" />
     <ClInclude Include="vdb_response.h" />
     <ClInclude Include="vdb_row.h" />
     <ClInclude Include="vdb_table.h" />
+    <ClInclude Include="vdb_utils.h" />
     <ClInclude Include="vdb_value.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

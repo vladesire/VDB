@@ -30,6 +30,9 @@
     <ClCompile Include="vdb_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vdb_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="file.vdb">
@@ -56,6 +59,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vdb_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vdb_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vdb_query_proc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

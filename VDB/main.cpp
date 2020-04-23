@@ -8,6 +8,23 @@ TODO LIST:
 -> Forbid using fucntion when opened == false
 3. Add security to select_where(), to_tree(), is_match() function to handle bad query string. (Data must not be corrupted)
 
+
+-> todo: 
+	vdb_row.h:35
+		sizeof...() will do it.
+
+	vdb_table.h:22
+		make one create_db(std::string), delete version with columns
+
+	vdb_table.h
+		rearrage meta in decreasing order
+
+	vdb_value
+		- Arrage code nicely
+
+	vdb_response
+		- decide wether to use container
+
 */
 
 //#include <filesystem> for future purposes
@@ -53,7 +70,7 @@ void start_vdbms()
 
 int main()
 {
-	start_vdbms();
+	//start_vdbms();
 
 	return 0;
 }

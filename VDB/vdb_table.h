@@ -11,31 +11,29 @@
 
 namespace vdb
 {
+
 struct column
 {
-	uint8_t type;
 	char name[32];
+	uint8_t type;
 	uint8_t size;
 };
 
-bool create_db(std::string &desc);
-bool create_db(const char *desc);
-bool create_db(const char *db_path, vdb::column *cols, uint8_t colcount);
+bool create_db(std::string desc); 
 
 int query_cout(std::string query);
 
 class Table
 {
 private:
+	bool opened;
 	uint16_t meta_size;    // This is the meta. 
-	uint8_t colcount;      // 
+	uint16_t colcount;     // 
 	uint16_t rowcount;     // 
 	uint16_t rowsize;      // 
 	column *cols;          // 
-	std::fstream file;     // 
 	std::string file_name; // 
-
-	bool opened;
+	std::fstream file;     // 
 
 public:
 
@@ -77,7 +75,7 @@ public:
 	void insert_into(const char *values);
 
 	// Read
-	Response select_where(std::string &condition);
+	Response select_where(std::string &condition); // todo: select_where(std::string cond)
 	Response select_where(const char *condition);
 	Response select_all();
 	
@@ -93,7 +91,7 @@ public:
 	std::string get_col_name(uint8_t col_index) const;
 
 	// Get meta information
-	uint8_t get_colcount() const;
+	uint16_t get_colcount() const;
 	uint16_t get_rowcount() const;
 
 };

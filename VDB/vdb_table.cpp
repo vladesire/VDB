@@ -1,80 +1,9 @@
 #include "vdb_table.h"
+#include "vdb_utils.h"
 
 namespace 
 { 
-	static inline void ltrim(std::string &s)
-	{
-		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch)
-		{
-			return !std::isspace(ch);
-		}));
-	}
-	static inline void rtrim(std::string &s)
-	{
-		s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch)
-		{
-			return !std::isspace(ch);
-		}).base(), s.end());
-	}
-	void unescape(std::string &str) // \" -> ", \' -> ', etc.
-	{
-		for (auto it = str.begin(); it != str.end(); ++it)
-		{
-			if (*it == '\\')
-			{
-				str.erase(it);
-			}
-		}
-	}
-	void remove_spaces(std::string &str)  // all not single spaces, leading and ending spaces are deleted
-	{
-		ltrim(str);
-		rtrim(str);
-
-		for (auto it = str.begin(); it != str.end(); ++it)
-		{
-			if (*it == '`')
-			{
-				while ((*(++it) != '`') && it != str.end())
-					if (*it == '\\' && (it + 1) != str.end() && (it + 2) != str.end())
-						++it;
-			}
-			else if (*it == '\"')
-			{
-				while ((*(++it) != '\"') && it != str.end())
-					if (*it == '\\' && (it + 1) != str.end() && (it + 2) != str.end())
-						++it;
-			}
-			else if (*it == ' ')
-			{
-				if (*(it + 1) == ' ')
-					str.erase(it--);
-			}
-		}
-
-	}
-	std::string next_token(std::string &source, const char *delim)
-	{
-		size_t pos = source.find_first_of(delim);
-
-		if (pos == std::string::npos)
-			return source;
-
-		// To skip "pre" delimeters
-		size_t skip = 0;
-		if (pos == 0)
-		{
-			skip = source.find_first_not_of(delim);
-			pos = source.find_first_of(delim, skip);
-		}
-
-		std::string temp;
-		temp = source.substr(skip, pos - skip);
-		source = source.substr(pos + 1);
-		return temp;
-	}
-
-	// This is query processor stuff -------------------------->
+	// This is query processor stuff --------------------------> vvvvvvvvvvvvvvvvvvvvvvvvvvv
 	struct Node
 	{
 		std::variant<vdb::Value, uint8_t, char> value;
@@ -433,13 +362,13 @@ namespace
 			}
 		}
 	}
-	// This is query processor stuff -------------------------->
+	// This is query processor stuff --------------------------> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 	void print_response(vdb::Response &response)
 	{
 		for (size_t i = 0; i < response.size(); i++)
 		{
-			for (size_t j = 0; j < response[i].get_size(); j++)
+			for (size_t j = 0; j < response[i].size(); j++)
 			{
 				std::cout << response[i][j].to_string() << "\t";
 			}
@@ -451,7 +380,7 @@ namespace
 	{
 		for (size_t i = 0; i < size; ++i)
 		{
-			for (size_t j = 0; j < row[i].get_size(); ++j)
+			for (size_t j = 0; j < row[i].size(); ++j)
 			{
 				std::cout << row[i][j].to_string() << " ";
 			}
@@ -467,7 +396,8 @@ namespace
 		std::cout << std::endl;
 	}
 }
-bool vdb::create_db(std::string &desc) //check if desc has correct syntax
+
+bool vdb::create_db(std::string desc) //check if desc has correct syntax
 {
 	std::string file_name;
 	std::fstream file;
@@ -536,48 +466,6 @@ bool vdb::create_db(std::string &desc) //check if desc has correct syntax
 		unescape(name);
 		file.write(name.c_str(), 32);
 		++pos2;
-	}
-
-	// write rowsize
-	file.write((char *)&rowsize, 2);
-
-	file.close();
-
-	return true;
-}
-bool vdb::create_db(const char *desc)
-{
-	std::string str(desc);
-	return create_db(str);
-}
-bool vdb::create_db(const char *db_path, vdb::column *cols, uint8_t colcount)
-{
-	std::fstream file;
-	file.open(db_path, std::ios::binary | std::ios::out);
-
-	if (!file.is_open())
-		return false;
-
-	uint16_t two_bytes;
-
-	//meta size
-	two_bytes = 7 + (33 * colcount);
-
-	file.write((char *)&two_bytes, 2);
-	file.write((char *)&colcount, 1);
-
-	two_bytes = 0;
-	// number of rows (= 0)
-	file.write((char *)&two_bytes, 2);
-
-	int colsize[] = {4, 8, 1, 32, 64}; // int, double, char, str32, str64
-	uint16_t rowsize = 0;
-
-	for (int i = 0; i < colcount; i++)
-	{
-		file.write((char *)&cols[i].type, 1);
-		file.write((char *)&cols[i].name, 32);
-		rowsize += colsize[cols[i].type];
 	}
 
 	// write rowsize
@@ -999,7 +887,7 @@ vdb::Response vdb::Table::select_all()
 	file.seekg(meta_size);
 	for (size_t i = 0; i < rowcount; ++i)
 	{
-		rows[i].resize(colcount);
+		rows[i].reserve(colcount);
 		for (int j = 0; j < colcount; ++j)
 		{
 			switch (cols[j].type)
@@ -1168,17 +1056,11 @@ bool vdb::Table::is_open() const
 }
 
 // Get meta information
-uint8_t vdb::Table::get_colcount() const
+uint16_t vdb::Table::get_colcount() const
 {
-	if (opened)
-		return colcount;
-	else
-		return 0;
+	return opened? colcount: 0;
 }
 uint16_t vdb::Table::get_rowcount() const
 {
-	if (opened)
-		return rowcount;
-	else
-		return 0;
+	return opened ? rowcount : 0;
 }

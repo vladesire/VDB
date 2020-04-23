@@ -1,60 +1,56 @@
-#ifndef ROW_H
-#define ROW_H
+#ifndef VDB_ROW_H
+#define VDB_ROW_H
 
-#include <cstdint>
+
 #include "vdb_value.h"
+#include <cstdint>
 #include <stdexcept>
+#include <vector>
 
 namespace vdb
 {
 class Row
 {
 private:
-    Value *values = nullptr;
-    size_t pointer = 0; // points to the current array index (needed for push_back())
-    size_t size = 0;
-    
-    template <typename T>
-    void count_size(T val) { ++size; }
-
-    template <typename T, typename... Rest>
-    void count_size(T val, Rest... rest) { ++size; count_size(rest...); }
+	std::vector<Value> values;
 
     template <typename T>
-    void get_value(T val) { push_back(val); }
+    void get_value(T val) { values.push_back(val); }
 
     template <typename T, typename... Rest>
-    void get_value(T val, Rest... rest) { push_back(val); get_value(rest...); }
+    void get_value(T val, Rest... rest) { values.push_back(val); get_value(rest...); }
+
 public:
-	Row();
+	Row() = default;
 	Row(size_t size_);
 
 	template <typename... Args>
 	Row(Args... args)
 	{
-		count_size(args...);
-		values = new vdb::Value[size];
+		values.reserve(sizeof...(args));
 		get_value(args...);
 	}
-
-	Row(const Row &row);
-	Row &operator=(const Row &row);
 
 	template <typename T>
 	Row &push_back(T val)
 	{
-		if (pointer < size)
-		{
-			vdb::Value value(val);
-			values[pointer++] = value; 
-		}
+		values.push_back(val);
 		return *this;
 	}
 
-	Value &operator[](const uint8_t index);
-	void resize(size_t size_);
-	size_t get_size();
-	~Row();
+	Value &operator[](const uint16_t index); // unchecked
+	Value &at(const uint16_t index); // checked
+
+	void reserve(uint16_t size)
+	{
+		values.reserve(size);
+	}
+
+	size_t size()
+	{
+		return values.size();
+	}
+
 };
 
 }
