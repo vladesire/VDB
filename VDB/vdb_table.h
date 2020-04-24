@@ -4,28 +4,19 @@
 #include <cstdint>
 #include <string>
 #include <fstream>
-#include <variant>
-#include <iostream>
 
 #include "vdb_response.h"
 
 namespace vdb
 {
 
-struct column
-{
-	char name[32];
-	uint8_t type;
-	uint8_t size;
-};
-
-bool create_db(std::string desc); 
-
-int query_cout(std::string query);
+bool create_db(std::string description); 
 
 class Table
 {
 private:
+	struct column;
+
 	bool opened;
 	uint16_t meta_size;    // This is the meta. 
 	uint16_t colcount;     // 
@@ -49,22 +40,7 @@ public:
 	vdb::Response vdb_query(std::string query); // IN DEVELOPMENT
 
 	// FOR DEBUG PURPOSES
-	void print_meta()
-	{
-		std::cout << "Meta size: \t" << meta_size << std::endl;
-		std::cout << "Column count: \t" << int(colcount) << std::endl;
-		std::cout << "Row count: \t" << rowcount << std::endl;
-		std::cout << "Row size: \t" << rowsize << std::endl << std::endl;
-
-		for (int i = 0, type; i < colcount; i++)
-		{
-			type = cols[i].type;
-			std::cout << "#" << i + 1 << " Column name: " << cols[i].name << std::endl;
-			std::cout << "#" << i + 1 << " Column type: " << (type == 0 ? "int" : (type == 1 ? "double" : (type == 2 ? "char" : (type == 3 ? "STR32" : "STR64")))) << std::endl;
-		}
-
-		std::cout << std::endl;
-	}
+	void print_meta();
 
 	// CRUD operations:
 	
@@ -75,8 +51,7 @@ public:
 	void insert_into(const char *values);
 
 	// Read
-	Response select_where(std::string &condition); // todo: select_where(std::string cond)
-	Response select_where(const char *condition);
+	Response select_where(std::string condition); // todo: select_where(std::string cond)
 	Response select_all();
 	
 	// Update...
@@ -89,8 +64,6 @@ public:
 	// Utils
 	bool is_open() const;
 	std::string get_col_name(uint8_t col_index) const;
-
-	// Get meta information
 	uint16_t get_colcount() const;
 	uint16_t get_rowcount() const;
 

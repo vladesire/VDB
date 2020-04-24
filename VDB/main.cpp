@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include "vdb_api.h"
-
 /*
 TODO LIST:
 
@@ -16,9 +15,6 @@ TODO LIST:
 	vdb_table.h:22
 		make one create_db(std::string), delete version with columns
 
-	vdb_table.h
-		rearrage meta in decreasing order
-
 	vdb_value
 		- Arrage code nicely
 
@@ -27,50 +23,21 @@ TODO LIST:
 
 */
 
-//#include <filesystem> for future purposes
-
-void start_vdbms()
-{
-	/*vdb::Table settings;
-	if (std::filesystem::exists(".settings"));
-	{
-		settings.open(".settings");
-		//LOAD SETTINGS
-	}*/
-
-	//std::system("cd databases"); ????
-
-	std::string query_;
-
-	std::getline(std::cin, query_);
-	std::cout << "------------------------------------------------------\n";
-
-	int r = vdb::query_cout(query_);
-
-	while (r != 1812) // exit code (my birthday)
-	{
-		std::cout << "------------------------------------------------------\n";
-		switch (r)
-		{
-			case 0:
-				std::cout << "OK!" << std::endl; break;
-			case -2:
-				std::cout << "\aWRONG_SYNTAX!" << std::endl; break;
-			default:
-				std::cout << "\aSome kind of problem" << std::endl; break;
-		}
-
-		std::cout << "------------------------------------------------------\n\n";
-
-		std::getline(std::cin, query_);
-		std::cout << "------------------------------------------------------\n";
-		r = vdb::query_cout(query_);
-	}
-}
 
 int main()
 {
-	//start_vdbms();
+	//vdb::vdbms_cout();
 
+	vdb::create_db("`Goddamn`: int `crap`, double `hellyeah`, char `that's it`");
+
+	vdb::Table table;
+
+	table.open("Goddamn");
+
+	table.print_meta();
+
+	table.close();
+
+	std::cin.get();
 	return 0;
 }
