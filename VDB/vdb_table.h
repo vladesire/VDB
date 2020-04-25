@@ -30,8 +30,10 @@ public:
 
 	// Class managment
 	Table();
-	Table(const Table &table);
-	Table &operator=(const Table &table);
+	Table(const Table &table) = delete;
+	Table(const Table &&table) = delete;
+	Table &operator=(const Table table) = delete;
+	
 	~Table();
 
 	// File managment
@@ -39,19 +41,23 @@ public:
 	void close();
 	vdb::Response vdb_query(std::string query); // IN DEVELOPMENT
 
+	// Utils
+	bool is_open() const;
+	uint16_t get_colcount() const;
+	uint16_t get_rowcount() const;
+	std::string get_col_name(uint8_t col_index) const;
+
 	// FOR DEBUG PURPOSES
 	void print_meta();
 
 	// CRUD operations:
 	
 	// Create
-	void insert_into(Value *vals);
 	void insert_into(Row &row);
-	void insert_into(std::string &values);
-	void insert_into(const char *values);
+	void insert_into(std::string values);
 
 	// Read
-	Response select_where(std::string condition); // todo: select_where(std::string cond)
+	Response select_where(std::string condition);
 	Response select_all();
 	
 	// Update...
@@ -60,13 +66,6 @@ public:
 	void remove();
 	void remove_line(size_t line);
 	void clear();
-
-	// Utils
-	bool is_open() const;
-	std::string get_col_name(uint8_t col_index) const;
-	uint16_t get_colcount() const;
-	uint16_t get_rowcount() const;
-
 };
 
 }

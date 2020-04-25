@@ -26,6 +26,5 @@ inline void trim(std::string &s)
 void unescape(std::string &str); // \" -> ", \' -> ', etc.
 void remove_spaces(std::string &str); // all non-single spaces, leading and ending spaces are deleted
 std::string next_token(std::string &source, const char *delim);
-std::string next_token_esc(std::string &source, const char *delim);
 
 #endif // !VDB_UTILS_H_

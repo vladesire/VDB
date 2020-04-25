@@ -12,7 +12,7 @@ void print_response(vdb::Response &response)
 	{
 		for (size_t j = 0; j < response[i].size(); j++)
 		{
-			std::cout << response[i][j].to_string() << "\t";
+			std::cout << response[i][j] << "\t";
 		}
 		std::cout << std::endl;
 	}
@@ -24,12 +24,12 @@ void print_rows(vdb::Row *row, size_t size)
 	{
 		for (size_t j = 0; j < row[i].size(); ++j)
 		{
-			std::cout << row[i][j].to_string() << " ";
+			std::cout << row[i][j] << " ";
 		}
 		std::cout << std::endl;
 	}
 }
-void print_table_colnames(const vdb::Table table)
+void print_table_colnames(const vdb::Table &table)
 {
 	for (size_t i = 0; i < table.get_colcount(); ++i)
 	{

@@ -30,6 +30,22 @@ public:
 	}
 
 	template <>
+	Value(char *str)
+	{
+		reset(); //if constructor is used for type conversion
+
+		auto size = strlen(str);
+		bool bit = false;
+
+		if (size > 64)
+			bit = true;
+
+		val = new char[bit ? 64 : size + 1];
+		memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
+		std::get<char *>(val)[bit ? 63 : size] = '\0';
+	}
+
+	template <>
 	Value(const char *str)
 	{
 		reset(); //if constructor is used for type conversion
@@ -44,12 +60,13 @@ public:
 		memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
 		std::get<char *>(val)[bit ? 63 : size] = '\0';
 	}
+	
 	~Value()
 	{
 		reset();
 	}
 
-	uint8_t get_type() const
+	uint8_t type() const
 	{
 		return val.index();
 	}
@@ -73,6 +90,7 @@ public:
 	{
 		return std::get<char *>(val);
 	}
+	char *cptr();
 
 	std::string to_string();
 };

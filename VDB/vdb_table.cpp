@@ -14,21 +14,20 @@ struct vdb::Table::column
 
 namespace
 {
-	void get_name(std::stringstream &ss, std::string &to)
+	void get_name(std::stringstream &ss, std::string &to, char border)
 	{ 
-		// skip everything till `
-		while (ss.peek() != '`')
+		// skip everything till border
+		while (ss.peek() != border)
 			ss.get();
 		ss.get();
 
-		while (ss.peek() != '`')
+		while (ss.peek() != border)
 		{
-			if (ss.peek() == '\\') // skip escaped char
+			if (ss.peek() == '\\') // skip leading '\'
 				ss.get();
-			else
-				to += ss.get();
+			to += ss.get();
 		}
-		ss.get(); // skip last `
+		ss.get(); // skip last border
 		ss.peek(); // to turn on eof bit (if it's the end)
 	}
 
@@ -57,8 +56,7 @@ bool vdb::create_db(std::string desc)
 	std::stringstream ss{desc};
 	std::string filename; // use it as filename
 
-	get_name(ss, filename); // `name with possible \` char`
-	unescape(filename);
+	get_name(ss, filename, '`'); // `name with possible \` char`
 	filename.append(".vdb");
 
 	std::fstream file(filename, std::ios::binary | std::ios::out);
@@ -84,8 +82,7 @@ bool vdb::create_db(std::string desc)
 		coltype = col_type(colinfo);  
 
 		colinfo.clear();
-		get_name(ss, colinfo); // get colname
-		unescape(colinfo);
+		get_name(ss, colinfo, '`'); // get colname
 
 		file.write((char *)&coltype, 1);
 		file.write(colinfo.c_str(), 32);
@@ -134,73 +131,6 @@ void vdb::Table::print_meta()
 // Class managment
 vdb::Table::Table() : opened{false} { }
 
-vdb::Table::Table(const Table &table)
-{
-	if (!table.opened)
-	{
-		opened = false;
-	}
-	else
-	{
-		meta_size = table.meta_size;
-		colcount = table.colcount;
-		rowcount = table.rowcount;
-		rowsize = table.rowsize;
-
-		cols = new column[colcount];
-
-		for (size_t i = 0; i < colcount; ++i)
-		{
-			strcpy(cols[i].name, table.cols[i].name);
-			cols[i].type = table.cols[i].type;
-			cols[i].size = table.cols[i].size;
-		}
-
-		file_name = table.file_name;
-
-		if (file_name.substr(file_name.length() - 4, 4) != ".vdb")
-			file_name.append(".vdb");
-
-		file.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
-
-		opened = true;
-	}
-}
-vdb::Table &vdb::Table::operator=(const vdb::Table &table)
-{
-	if (this == &table)
-		return *this;
-	if (!table.opened)
-	{	
-		opened = false;
-	}
-	else
-	{
-		meta_size = table.meta_size;
-		colcount = table.colcount;
-		rowcount = table.rowcount;
-		rowsize = table.rowsize;
-
-		cols = new column[colcount];
-
-		for (size_t i = 0; i < colcount; ++i)
-		{
-			strcpy(cols[i].name, table.cols[i].name);
-			cols[i].type = table.cols[i].type;
-			cols[i].size = table.cols[i].size;
-		}
-
-		file_name = table.file_name;
-
-		if (file_name.substr(file_name.length() - 4, 4) != ".vdb")
-			file_name.append(".vdb");
-
-		file.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
-
-		opened = true;
-	}
-	return *this;
-}
 vdb::Table::~Table()
 {
 	if (opened)
@@ -264,52 +194,15 @@ vdb::Response vdb::Table::vdb_query(std::string query)
 // CRUD operations:
 
 // Create
-void vdb::Table::insert_into(vdb::Value *vals)
-{
-	// TODO: check if vals is valid (colcount) + think about auto-value in row (like null by default or autoincrement)
-	file.seekp(0, std::ios::end);
-
-	for (int i = 0; i < colcount; i++)
-	{
-		if (vals[i].get_type() != cols[i].type)
-		{
-			// Null value must be set if its possible (not_null = false)
-
-			char a = 0;
-
-			for (int i = 0; i < cols[i].size; ++i)
-				file.write(&a, 1);
-		}
-		switch (cols[i].type)
-		{
-			// (char *)vals[i] will return pointer to vdb::Value inner buffer that contain the value
-			case 0:
-				file.write((char *)vals[i], 4); break;
-			case 1:
-				file.write((char *)vals[i], 8); break;
-			case 2:
-				file.write((char *)vals[i], 1); break;
-			case 3:
-				file.write((char *)vals[i], 32); break;
-			case 4:
-				file.write((char *)vals[i], 64); break;
-		}
-	}
-	file.seekp(3);
-	++rowcount;
-	file.write((char *)&rowcount, 2);
-	file.seekp(0);
-}
 void vdb::Table::insert_into(vdb::Row &row)
 {
-	// TODO: check if vals is valid (colcount) + think about auto-value in row (like null by default or autoincrement)
 	file.seekp(0, std::ios::end);
 
 	for (int i = 0; i < colcount; i++)
 	{
-		if (row[i].get_type() != cols[i].type)
+		if (row[i].type() != cols[i].type)
 		{
-			// Null value must be set if its possible (not_null = false)
+			// Null value must be set if it's possible (not_null = false)
 
 			char a = 0;
 
@@ -320,17 +213,16 @@ void vdb::Table::insert_into(vdb::Row &row)
 		}
 		switch (cols[i].type)
 		{
-			// (char *)vals[i] will return pointer to vdb::Value inner buffer that contain the value
 			case 0:
-				file.write((char *)row[i], 4); break;
+				file.write(row[i].cptr(), 4); break;
 			case 1:
-				file.write((char *)row[i], 8); break;
+				file.write(row[i].cptr(), 8); break;
 			case 2:
-				file.write((char *)row[i], 1); break;
+				file.write(row[i].cptr(), 1); break;
 			case 3:
-				file.write((char *)row[i], 32); break;
+				file.write(row[i].cptr(), 32); break;
 			case 4:
-				file.write((char *)row[i], 64); break;
+				file.write(row[i].cptr(), 64); break;
 		}
 	}
 	file.seekp(3);
@@ -338,99 +230,59 @@ void vdb::Table::insert_into(vdb::Row &row)
 	file.write((char *)&rowcount, 2);
 	file.seekp(0);
 }
-void vdb::Table::insert_into(std::string &values)
-{
 
+void vdb::Table::insert_into(std::string values)
+{
+	trim(values);
+	std::stringstream ss{values};
+	
 	file.seekp(0, std::ios::end);
-	// Values example: "12, 43.34, \"String\", \'C\'"
-	ltrim(values); // without it mechanism crashes because iterator can't be decremented under the condition.begin()
-	rtrim(values);
-	for (auto it = values.begin(); it != values.end(); ++it)
-	{
-		if (*it == '`')
-		{
-			while (*(++it) != '`')
-				if (*it == '\\' && (it + 1) != values.end() && (it + 2) != values.end())
-					++it;
-		}
-		else if (*it == '\"')
-		{
-			while (*(++it) != '\"')
-				if (*it == '\\' && (it + 1) != values.end() && (it + 2) != values.end())
-					++it;
-		}
-		else if (*it == ' ')
-		{
-			values.erase(it--);
-		}
-	}
 
 	for (size_t i = 0; i < colcount; ++i)
 	{
-		size_t k = 0;
-		for (; values[k] != ',' && k < values.length(); ++k)
-		{
-			if (values[k] == '\"')
-			{
-				while (values[++k] != '\"')
-				{
-					if (values[k] == '\\' && (k + 1) < values.length() && (k + 2) != values.length())
-						++k;
-				}
-			}
-			if (values[k] == '\'')
-			{
-				if(values[k + 1] == '\\')
-					k += 3;
-				else
-					k += 2;
-			}
-			
-		}
-		std::string str_val = values.substr(0, k);
-		if (k < values.length())
-			values = values.substr(k + 1);
+		while (!isalnum(ss.peek()))
+			ss.get();
 
 		switch (cols[i].type)
 		{
 			case 0:
 			{
-				int val = std::stoi(str_val);
-				file.write((char *)&val, 4);
+				int temp;
+				ss >> temp;
+				file.write((char *)&temp, 4);
 			}; break;
 			case 1:
 			{
-				double val = std::stod(str_val);
-				file.write((char *)&val, 8);
+				double temp;
+				ss >> temp;
+				file.write((char *)&temp, 8);
 			}; break;
 			case 2:
 			{
-				if (str_val[1] == '\\')
-					file.write((char *)&str_val[2], 1);
-				else 
-					file.write((char *)&str_val[1], 1);
+				char temp;
+				ss >> temp;
+
+				if(temp == '\\')
+					ss >> temp;
+
+				file.write((char *)&temp, 1);
 			}; break;
 			case 3:
 			case 4:
 			{
-				unescape(str_val);
-				file.write(str_val.substr(1, str_val.length() - 2).c_str(), cols[i].size);
+				std::string temp;
+				ss.unget();
+				get_name(ss, temp, '\"');
+
+				file.write(temp.c_str(), cols[i].size);
 			}; break;
-
-			default:
-				break;
 		}
-
 	}
-	file.seekp(3);
+
+	file.seekp(6);
 	++rowcount;
 	file.write((char *)&rowcount, 2);
 	file.seekp(0);
-}
-void vdb::Table::insert_into(const char *values)
-{
-	std::string vals(values);
-	insert_into(vals);
 }
 
 // Read

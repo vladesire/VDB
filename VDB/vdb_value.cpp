@@ -9,7 +9,7 @@ void vdb::swap(Value &val1, Value &val2)
 
 vdb::Value::Value(const Value &value)
 {
-	if (value.get_type() == 3)
+	if (value.type() == 3)
 	{
 		auto size = strlen(std::get<char *>(value.val));
 
@@ -39,12 +39,8 @@ void vdb::Value::reset()
 {
 	if (val.index() == 3)
 	{
-		char *&ptr = get<char *>(val);
-		if (ptr)
-		{
-			delete[] ptr;
-			ptr = nullptr;
-		}
+		delete[] std::get<char *>(val);
+		val = nullptr;
 	}
 }
 
@@ -60,6 +56,21 @@ std::string vdb::Value::to_string()
 			return std::to_string(get<char>(val));
 		case 3:
 			return std::string(get<char *>(val));
+	}
+}
+
+char *vdb::Value::cptr()
+{
+	switch (val.index())
+	{
+		case 0:
+			return reinterpret_cast<char *>(std::get_if<int>(&val));
+		case 1:
+			return reinterpret_cast<char *>(std::get_if<double>(&val));
+		case 2:
+			return reinterpret_cast<char *>(std::get_if<char>(&val));
+		case 3:
+			return std::get<char *>(val);
 	}
 }
 

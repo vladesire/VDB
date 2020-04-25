@@ -17,7 +17,7 @@ bool vdb_impl::is_match(vdb::Row &row, const Node *tree)
 			{
 				case '=':
 				{
-					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].type())
 					{
 						case 0:
 						{
@@ -45,7 +45,7 @@ bool vdb_impl::is_match(vdb::Row &row, const Node *tree)
 				}; break;
 				case '!':
 				{
-					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].type())
 					{
 						case 0:
 						{
@@ -73,7 +73,7 @@ bool vdb_impl::is_match(vdb::Row &row, const Node *tree)
 				}; break;
 				case '>':
 				{
-					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].type())
 					{
 						case 0:
 						{
@@ -91,7 +91,7 @@ bool vdb_impl::is_match(vdb::Row &row, const Node *tree)
 				}; break;
 				case '<':
 				{
-					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].type())
 					{
 						case 0:
 						{
@@ -109,7 +109,7 @@ bool vdb_impl::is_match(vdb::Row &row, const Node *tree)
 				}; break;
 				case 'g': // >=
 				{
-					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].type())
 					{
 						case 0:
 						{
@@ -127,7 +127,7 @@ bool vdb_impl::is_match(vdb::Row &row, const Node *tree)
 				}; break;
 				case 'l': // <=
 				{
-					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].get_type())
+					switch (row[tree->left->value.index() == 0 ? std::get<uint8_t>(tree->right->value) : std::get<uint8_t>(tree->left->value)].type())
 					{
 						case 0:
 						{
