@@ -10,17 +10,12 @@ TODO LIST:
 
 
 -> todo: 
-	vdb_row.h:35
-		sizeof...() will do it.
-
-	vdb_table.h:
-		- Add move + copy-and-swap
-
 	vdb_value
 		- Arrage code nicely
+		- deal with code duplicate (in constructor)
 
-	vdb_response
-		- decide wether to use container
+	vdb_utils
+		- add namespave vdb_impl or something
 
 */
 
@@ -51,6 +46,39 @@ auto speed_test(size_t precision, Callable func, Params ...args)
 			return std::make_pair(std::to_string(duration_cast<seconds>(end - start).count()) + "s", duration_cast<seconds>(end - start).count());
 	}
 }
+auto get_diff_str(std::chrono::steady_clock::time_point start, std::chrono::steady_clock::time_point end, size_t precision = 1)
+{
+	using namespace std::chrono;
+
+	switch (precision)
+	{
+		case 1:
+			return std::to_string(duration_cast<milliseconds>(end - start).count()) + "ms";
+		case 2:
+			return std::to_string(duration_cast<microseconds>(end - start).count()) + "mcs";
+		case 3:
+			return std::to_string(duration_cast<nanoseconds>(end - start).count()) + "ns";
+		default:
+			return std::to_string(duration_cast<seconds>(end - start).count()) + "s";
+	}
+}
+auto get_diff_num(std::chrono::steady_clock::time_point start, std::chrono::steady_clock::time_point end, size_t precision = 1)
+{
+	using namespace std::chrono;
+
+	switch (precision)
+	{
+		case 1:
+			return duration_cast<milliseconds>(end - start).count();
+		case 2:
+			return duration_cast<microseconds>(end - start).count();
+		case 3:
+			return duration_cast<nanoseconds>(end - start).count();
+		default:
+			return duration_cast<seconds>(end - start).count();
+	}
+}
+
 
 void print_response(vdb::Response &&response) 
 {
@@ -66,15 +94,6 @@ void print_response(vdb::Response &&response)
 
 int main()
 {
-	//vdb::create_db("`Goddamn`: int `id`, double `num`");
-	
-	vdb::Table table;
-	table.open("Goddamn");
-
-	print_response(table.select_all());
-
-	table.close();
-
 
 	std::cin.get();
 	return 0;

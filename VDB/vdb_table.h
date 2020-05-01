@@ -26,6 +26,17 @@ private:
 	std::string file_name; // 
 	std::fstream file;     // 
 
+	 
+
+	// Select where algorithm
+	mutable Row *row_cached;
+
+	bool dispatch_or(const char *query, size_t l, size_t r);
+	bool dispatch_and(const char *query, size_t l, size_t r);
+	bool dispatch_comp(const char *query, size_t l, size_t r);
+	Value get_val(const char *query, size_t l, size_t r);
+	inline bool parentheses(const char *query, size_t l, size_t r);
+
 public:
 
 	// Class managment

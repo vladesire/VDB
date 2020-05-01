@@ -7,6 +7,21 @@ void vdb::swap(Value &val1, Value &val2)
 	val1.val.swap(val2.val);
 }
 
+vdb::Value::Value(const char *str, bool)
+{
+	reset(); //if constructor is used for type conversion
+
+	auto size = strlen(str);
+	bool bit = false;
+
+	if (size > 64)
+		bit = true;
+
+	val = new char[bit ? 64 : size + 1];
+	memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
+	std::get<char *>(val)[bit ? 63 : size] = '\0';
+}
+
 vdb::Value::Value(const Value &value)
 {
 	if (value.type() == 3)
@@ -59,16 +74,16 @@ std::string vdb::Value::to_string()
 	}
 }
 
-char *vdb::Value::cptr()
+const char *vdb::Value::cptr()
 {
 	switch (val.index())
 	{
 		case 0:
-			return reinterpret_cast<char *>(std::get_if<int>(&val));
+			return reinterpret_cast<const char *>(std::get_if<int>(&val));
 		case 1:
-			return reinterpret_cast<char *>(std::get_if<double>(&val));
+			return reinterpret_cast<const char *>(std::get_if<double>(&val));
 		case 2:
-			return reinterpret_cast<char *>(std::get_if<char>(&val));
+			return reinterpret_cast<const char *>(std::get_if<char>(&val));
 		case 3:
 			return std::get<char *>(val);
 	}
@@ -76,7 +91,7 @@ char *vdb::Value::cptr()
 
 std::ostream &vdb::operator<<(std::ostream &os, Value val)
 {
-	os << val.to_string();
+	std::visit([&os](auto &&x){ os << x; }, val.val); // visit variant 
 	return os;
 }
 

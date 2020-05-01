@@ -29,44 +29,17 @@ public:
 		val = value;
 	}
 
-	template <>
-	Value(char *str)
-	{
-		reset(); //if constructor is used for type conversion
+	template <> // it's identical to const char, but template generates new code for it
+	Value(char *str) : Value(str, false) { }
 
-		auto size = strlen(str);
-		bool bit = false;
+	Value(const char *str, bool = false);
 
-		if (size > 64)
-			bit = true;
-
-		val = new char[bit ? 64 : size + 1];
-		memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
-		std::get<char *>(val)[bit ? 63 : size] = '\0';
-	}
-
-	template <>
-	Value(const char *str)
-	{
-		reset(); //if constructor is used for type conversion
-
-		auto size = strlen(str);
-		bool bit = false;
-
-		if (size > 64)
-			bit = true;
-
-		val = new char[bit ? 64 : size + 1];
-		memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
-		std::get<char *>(val)[bit ? 63 : size] = '\0';
-	}
 	
 	~Value()
 	{
 		reset();
 	}
-
-	uint8_t type() const
+	constexpr uint8_t type() const
 	{
 		return val.index();
 	}
@@ -90,17 +63,99 @@ public:
 	{
 		return std::get<char *>(val);
 	}
-	char *cptr();
+	const char *cptr();
+
+	bool operator>(const Value &val1)
+	{
+		switch (val.index())
+		{
+		case 0:
+			return std::get<0>(val) > (int)(val1);
+		case 1:
+			return std::get<1>(val) > (double)(val1);
+		case 2:
+		case 3:
+			throw std::exception("Comparision (>, >=, <, <=) of strings and chars is not supported");
+		}
+	}
+	bool operator<(const Value &val1)
+	{
+		switch (val.index())
+		{
+			case 0:
+				return std::get<0>(val) < (int)(val1);
+			case 1:
+				return std::get<1>(val) < (double)(val1);
+			case 2:
+			case 3:
+				throw std::exception("Comparision (>, >=, <, <=) of strings and chars is not supported");
+		}
+	}
+	bool operator>=(const Value &val1)
+	{
+		switch (val.index())
+		{
+			case 0:
+				return std::get<0>(val) >= (int)(val1);
+			case 1:
+				return std::get<1>(val) >= (double)(val1);
+			case 2:
+			case 3:
+				throw std::exception("Comparision (>, >=, <, <=) of strings and chars is not supported");
+		}
+	}
+	bool operator<=(const Value &val1)
+	{
+		switch (val.index())
+		{
+			case 0:
+				return std::get<0>(val) <= (int)(val1);
+			case 1:
+				return std::get<1>(val) <= (double)(val1);
+			case 2:
+			case 3:
+				throw std::exception("Comparision (>, >=, <, <=) of strings and chars is not supported");
+		}
+	}
+	bool operator==(const Value &val1)
+	{
+		switch (val.index())
+		{
+			case 0:
+				return std::get<0>(val) == (int)(val1);
+			case 1:
+				return std::get<1>(val) == (double)(val1);
+			case 2:
+				return std::get<2>(val) == (char)(val1);
+			case 3:
+				return !strcmp(std::get<3>(val), (char *)(val1));
+		}
+	}
+	bool operator!=(const Value &val1)
+	{
+		switch (val.index())
+		{
+			case 0:
+				return std::get<0>(val) != (int)(val1);
+			case 1:
+				return std::get<1>(val) != (double)(val1);
+			case 2:
+				return std::get<2>(val) != (char)(val1);
+			case 3:
+				return strcmp(std::get<3>(val), (char *)(val1));
+		}
+		
+	}
+
 
 	std::string to_string();
 };
 
 template <class T>
-T get(Value &val)
+T get(const Value &val)
 {
 	return static_cast<T>(val);
 };
-
 
 }
 #endif // !Value_H

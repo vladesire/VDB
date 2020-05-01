@@ -8,6 +8,12 @@ vdb::Response::Response(vdb::Row *row, uint16_t row_count)
 	}
 }
 
+vdb::Response &vdb::Response::push_back(Row &row)
+{
+	rows.push_back(row);
+	return *this;
+}
+
 vdb::Row &vdb::Response::operator[](const size_t index)
 {
 	return rows[index];

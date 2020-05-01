@@ -15,6 +15,7 @@ public:
 	Response() = default;
 	Response(Row *row_, uint16_t row_count_);
 
+	Response &push_back(Row &row);
 	Row &operator[](const size_t index);
 	Row &at(const size_t index);
 

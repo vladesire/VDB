@@ -1,5 +1,4 @@
 #include "vdb_table.h"
-#include "vdb_query_proc.h"
 #include "vdb_utils.h"
 
 #include <sstream>
@@ -14,6 +13,7 @@ struct vdb::Table::column
 
 namespace
 {
+	// small utilities
 	void get_name(std::stringstream &ss, std::string &to, char border)
 	{ 
 		// skip everything till border
@@ -30,7 +30,6 @@ namespace
 		ss.get(); // skip last border
 		ss.peek(); // to turn on eof bit (if it's the end)
 	}
-
 	size_t col_type(std::string &name)
 	{
 		if (name == "int")
@@ -43,6 +42,17 @@ namespace
 			return 4;
 		else
 			return 1; // if double or anything else
+	}
+	inline void skip_parentheses(const char *str, size_t &i)
+	{
+		uint8_t nest_lvl = 1;
+		while (nest_lvl && ++i)
+		{
+			if (str[i] == ')')
+				--nest_lvl;
+			else if (str[i] == '(')
+				++nest_lvl;
+		}
 	}
 }
 
@@ -127,10 +137,149 @@ void vdb::Table::print_meta()
 //todo DEBUG --- end ---
 
 
+// Select_where algorithm
+bool vdb::Table::dispatch_or(const char *str, size_t l, size_t r)
+{
+	bool answ = false;
+	size_t i = l;
+
+	while (i < r)
+	{
+		if (str[i] == '|')
+		{
+			answ = answ || dispatch_and(str, l, i);
+
+			if (answ)
+				return answ; // if one operand of or-expression is true, the whole expression is true
+
+			l = i + 2;
+			++i;
+		}
+		else if (str[i] == '(')
+		{
+			skip_parentheses(str, i);
+		}
+		++i;
+	}
+
+	answ = answ || dispatch_and(str, l, r);
+
+	return answ;
+}
+bool vdb::Table::dispatch_and(const char *str, size_t l, size_t r)
+{
+	bool answ = true;
+	size_t i = l;
+
+	while (i < r)
+	{
+		if (str[i] == '&')
+		{
+			answ = answ && dispatch_comp(str, l, i);
+
+			if (!answ)
+				return answ; // if one operand of and-expression is false, the whole expression is false
+
+			l = i + 2;
+			++i;
+		}
+		else if (str[i] == '(')
+		{
+			skip_parentheses(str, i);
+		}
+		++i;
+	}
+
+	answ = answ && dispatch_comp(str, l, r);
+
+	return answ;
+}
+bool vdb::Table::dispatch_comp(const char *str, size_t l, size_t r)
+{
+	if (str[l] == '(' || str[l + 1] == '(') // ( or !(
+		return parentheses(str, l, r);
+
+	size_t i = l;
+
+	while (i < r)
+	{
+		if (str[i] == '>')
+		{
+			if (str[i + 1] == '=')
+			{
+				return get_val(str, l, i) >= get_val(str, i + 2, r);
+			}
+			else
+			{
+				return get_val(str, l, i) > get_val(str, i + 1, r);
+			}
+		}
+		else if (str[i] == '<')
+		{
+			if (str[i + 1] == '=')
+			{
+				return get_val(str, l, i) <= get_val(str, i + 2, r);
+			}
+			else
+			{
+				return get_val(str, l, i) < get_val(str, i + 1, r);
+			}
+		}
+		else if (str[i] == '=')
+		{
+			return get_val(str, l, i) == get_val(str, i + 2, r);
+		}
+		else if (str[i] == '!' && str[i + 1] == '=')
+		{
+			return get_val(str, l, i) != get_val(str, i + 2, r);
+		}
+		++i;
+	}
+	return false;
+}
+bool vdb::Table::parentheses(const char *str, size_t l, size_t r)
+{
+	return (str[l] == '!') ? !dispatch_or(str, l + 2, r - 1) : dispatch_or(str, l + 1, r - 1);
+}
+vdb::Value vdb::Table::get_val(const char *str, size_t l, size_t r)
+{
+	if (str[l] == '`')
+	{
+		//todo: It's only a prototype
+		
+		std::string name {str + l + 1, r - l - 2};
+
+		//todo: unescape
+
+		for (uint8_t i = 0; i < get_colcount(); i++)
+		{
+			if (get_col_name(i) == name)
+			{
+				return (*row_cached)[i];
+			}
+		}
+		throw std::exception((name + " columm doesn't exists").c_str());
+	}
+	else if (isdigit(str[l]))
+	{
+		double d = strtod(str + l, nullptr);
+		return Value{d};
+	}
+	else if (str[l] == '\"')
+	{
+		std::string strval {str + l + 1, r - l - 2};
+		unescape(strval);
+		return Value{strval.c_str()};
+	}
+	else if (str[l] == '\'')
+	{
+		return str[l+1] == '\\'? Value{str[l+2]}: Value{str[l+1]};
+	}
+}
+
 
 // Class managment
 vdb::Table::Table() : opened{false} { }
-
 vdb::Table::~Table()
 {
 	if (opened)
@@ -225,12 +374,11 @@ void vdb::Table::insert_into(vdb::Row &row)
 				file.write(row[i].cptr(), 64); break;
 		}
 	}
-	file.seekp(3);
+	file.seekp(6);
 	++rowcount;
 	file.write((char *)&rowcount, 2);
 	file.seekp(0);
 }
-
 void vdb::Table::insert_into(std::string values)
 {
 	trim(values);
@@ -240,7 +388,7 @@ void vdb::Table::insert_into(std::string values)
 
 	for (size_t i = 0; i < colcount; ++i)
 	{
-		while (!isalnum(ss.peek()))
+		while (!isalnum(ss.peek()) && ss.peek() != '\"' && ss.peek() != '\'') // don't go inside strings and characters
 			ss.get();
 
 		switch (cols[i].type)
@@ -249,32 +397,32 @@ void vdb::Table::insert_into(std::string values)
 			{
 				int temp;
 				ss >> temp;
-				file.write((char *)&temp, 4);
+				file.write((char *)&temp, sizeof(int));
 			}; break;
 			case 1:
 			{
 				double temp;
 				ss >> temp;
-				file.write((char *)&temp, 8);
+				file.write((char *)&temp, sizeof(double));
 			}; break;
 			case 2:
 			{
 				char temp;
+				ss.get(); // skip '\''
 				ss >> temp;
 
 				if(temp == '\\')
 					ss >> temp;
 
-				file.write((char *)&temp, 1);
+				file.write((char *)&temp, sizeof(char));
 			}; break;
 			case 3:
 			case 4:
 			{
 				std::string temp;
-				ss.unget();
 				get_name(ss, temp, '\"');
 
-				file.write(temp.c_str(), cols[i].size);
+				file.write(temp.c_str(), cols[i].size * sizeof(char));
 			}; break;
 		}
 	}
@@ -301,31 +449,31 @@ vdb::Response vdb::Table::select_all()
 				case 0:
 				{
 					int buff;
-					file.read((char *)&buff, 4);
+					file.read((char *)&buff, sizeof(int));
 					rows[i].push_back(buff);
 				}; break;
 				case 1:
 				{
 					double buff;
-					file.read((char *)&buff, 8);
+					file.read((char *)&buff, sizeof(double));
 					rows[i].push_back(buff);
 				}; break;
 				case 2:
 				{
 					char buff;
-					file.read(&buff, 1);
+					file.read(&buff, sizeof(char));
 					rows[i].push_back(buff);
 				}; break;
 				case 3:
 				{
 					char buff[32];
-					file.read(buff, 32);
+					file.read(buff, 32 * sizeof(char));
 					rows[i].push_back(buff);
 				}; break;
 				case 4:
 				{
 					char buff[64];
-					file.read(buff, 64);
+					file.read(buff, 64 * sizeof(char));
 					rows[i].push_back(buff);
 				}; break;
 			}
@@ -340,12 +488,8 @@ vdb::Response vdb::Table::select_all()
 
 	return resp;
 }
-// TODO INSIDE!!!
 vdb::Response vdb::Table::select_where(std::string condition)
 {
-	using namespace vdb_impl;
-
-	// All excess blanks must be truncated
 	ltrim(condition); // without it mechanism crashes because iterator can't be decremented under the condition.begin()
 	for (auto it = condition.begin(); it != condition.end(); ++it) // TODO: The leading blank will fuck my algorithm
 	{
@@ -366,34 +510,36 @@ vdb::Response vdb::Table::select_where(std::string condition)
 			condition.erase(it--);
 		}
 	}
-	Node *root = new Node;
 
-	vdb::Response resp = select_all();
+	vdb::Response all = select_all();
+	vdb::Response resp;
 
-	set_tree(condition, root, *this);
+	auto cond = condition.c_str();
+	auto len = condition.size();
 
-	uint16_t match_count = 0;
-	vdb::Row *match_indexes = new vdb::Row[resp.size()]; // I SHOULD STORE ONLY POINTERS TO THE ROWS, NOT VALUES ITSELF (OR NOT???)
+	try
+	{
+		for (uint16_t i = 0; i < all.size(); ++i)
+		{
+			row_cached = &all[i];
 
-	for (uint16_t i = 0; i < resp.size(); i++)
-		if (is_match(resp[i], root))
-			match_indexes[match_count++] = resp[i]; // sizeof(vdb::Row) > sizeof(vdb::Row *), but should I define operator= for pointers copy?
-
-	vdb::Response new_response(match_indexes, match_count);
-
-	resp = new_response;
-
-	delete[] match_indexes;
-	destroy_tree(root);
-
-	return resp;
+			if (dispatch_or(cond, 0, len))
+			{
+				resp.push_back(all[i]);
+			}
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		std::cout << "\n" << ex.what() << "\n";
+		return Response();
+	}
 
 	return resp;
 }
 
-
 // Update...
-
+// ...
 
 // Delete
 void vdb::Table::clear()
@@ -409,8 +555,8 @@ void vdb::Table::clear()
 
 		rowcount = 0;
 
-		buff[3] = 0; // to set rowcount zero
-		buff[4] = 0;
+		buff[6] = 0; // to set rowcount zero
+		buff[7] = 0;
 
 		file.write(buff, meta_size);
 		file.seekp(0);
@@ -457,8 +603,6 @@ bool vdb::Table::is_open() const
 {
 	return opened;
 }
-
-// Get meta information
 uint16_t vdb::Table::get_colcount() const
 {
 	return opened? colcount: 0;
