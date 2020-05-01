@@ -173,3 +173,4 @@ void vdb::vdbms_cout()
 		r = vdb::query_cout(query_);
 	}
 }
+

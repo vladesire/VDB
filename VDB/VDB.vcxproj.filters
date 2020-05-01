@@ -38,13 +38,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="file.vdb">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="testdb.vdb">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="vladesire.vdb">
+    <None Include="vdsr_speed.vdb">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

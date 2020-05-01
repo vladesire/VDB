@@ -12,7 +12,6 @@ TODO LIST:
 -> todo: 
 	vdb_value
 		- Arrage code nicely
-		- deal with code duplicate (in constructor)
 
 	vdb_utils
 		- add namespave vdb_impl or something
@@ -20,32 +19,6 @@ TODO LIST:
 */
 
 #include <chrono>
-#include <string>
-
-
-
-
-template <class Callable, class ...Params>
-auto speed_test(size_t precision, Callable func, Params ...args)
-{
-	using namespace std::chrono;
-
-	auto start = steady_clock().now();
-	func(args...);
-	auto end = steady_clock().now();
-
-	switch (precision)
-	{
-		case 0:
-			return std::make_pair(std::to_string(duration_cast<milliseconds>(end - start).count()) + "ms", duration_cast<milliseconds>(end - start).count());
-		case 1:
-			return std::make_pair(std::to_string(duration_cast<microseconds>(end - start).count()) + "mcs", duration_cast<microseconds>(end - start).count());
-		case 2:
-			return std::make_pair(std::to_string(duration_cast<nanoseconds>(end - start).count()) + "ns", duration_cast<nanoseconds>(end - start).count());
-		default:
-			return std::make_pair(std::to_string(duration_cast<seconds>(end - start).count()) + "s", duration_cast<seconds>(end - start).count());
-	}
-}
 auto get_diff_str(std::chrono::steady_clock::time_point start, std::chrono::steady_clock::time_point end, size_t precision = 1)
 {
 	using namespace std::chrono;
@@ -78,8 +51,6 @@ auto get_diff_num(std::chrono::steady_clock::time_point start, std::chrono::stea
 			return duration_cast<seconds>(end - start).count();
 	}
 }
-
-
 void print_response(vdb::Response &&response) 
 {
 	for (size_t i = 0; i < response.size(); i++)
@@ -94,7 +65,8 @@ void print_response(vdb::Response &&response)
 
 int main()
 {
-
+	// todo: test select_where() again. I used util function in it.
+	
 	std::cin.get();
 	return 0;
 }

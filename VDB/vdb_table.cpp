@@ -490,26 +490,7 @@ vdb::Response vdb::Table::select_all()
 }
 vdb::Response vdb::Table::select_where(std::string condition)
 {
-	ltrim(condition); // without it mechanism crashes because iterator can't be decremented under the condition.begin()
-	for (auto it = condition.begin(); it != condition.end(); ++it) // TODO: The leading blank will fuck my algorithm
-	{
-		if (*it == '`')
-		{
-			while (*(++it) != '`')
-				if (*it == '\\' && (it + 1) != condition.end() && (it + 2) != condition.end())
-					++it;
-		}
-		else if (*it == '\"')
-		{
-			while (*(++it) != '\"')
-				if (*it == '\\' && (it + 1) != condition.end() && (it + 2) != condition.end())
-					++it;
-		}
-		else if (*it == ' ')
-		{
-			condition.erase(it--);
-		}
-	}
+	remove_spaces(condition);
 
 	vdb::Response all = select_all();
 	vdb::Response resp;

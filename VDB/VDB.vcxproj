@@ -135,9 +135,7 @@
     <ClCompile Include="vdb_value.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="file.vdb" />
-    <None Include="testdb.vdb" />
-    <None Include="vladesire.vdb" />
+    <None Include="vdsr_speed.vdb" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vdb_api.h" />
