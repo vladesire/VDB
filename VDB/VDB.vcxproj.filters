@@ -18,27 +18,24 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vdb_response.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vdb_row.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vdb_value.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vdb_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vdb_console.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="file.vdb">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="testdb.vdb">
+    <None Include="vdsr_speed.vdb">
       <Filter>Source Files</Filter>
     </None>
     <None Include="vladesire.vdb">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="Goddamn.vdb">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
@@ -56,6 +53,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vdb_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vdb_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vdb_console.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

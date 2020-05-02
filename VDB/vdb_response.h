@@ -1,28 +1,47 @@
 #ifndef VDB_RESPONSE_H_
 #define VDB_RESPONSE_H_
 
-#include "vdb_row.h"
-#include <cstring>
 #include <cstdint>
+#include <vector>
+#include "vdb_row.h"
 
 namespace vdb
 {
+
 class Response
 {
 private:
-	Row *row = nullptr;
-	uint16_t row_count;
+	std::vector<Row> rows;
 public:
-	Response();
-	Response(Row *row_, uint16_t row_count_);
-	Response(const Response &resp);
-	Response &operator=(const Response &resp);
-	Row &operator[](const size_t index);
-	uint16_t size();
-	~Response();
+	Response() = default;
+	Response(Row *row, uint16_t row_count)
+	{
+		for (size_t i = 0; i < row_count; ++i)
+		{
+			rows.push_back(row[i]);
+		}
+	}
+
+	Response &push_back(Row &row)
+	{
+		rows.push_back(row);
+		return *this;
+	}
+	Row &operator[](const size_t index)
+	{
+		return rows[index];
+	}
+	Row &at(const size_t index)
+	{
+		return rows.at(index);
+	}
+
+	uint16_t size()
+	{
+		return rows.size();
+	}
 };
+
 }
-
-
 
 #endif // !VDB_RESPONSE_H_

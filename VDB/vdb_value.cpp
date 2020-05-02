@@ -1,115 +1,89 @@
+#include <iostream> // for operator<<()
 #include "vdb_value.h"
 
-int vdb::Value::int_val() const
+void vdb::swap(Value &val1, Value &val2)
 {
-	int a;
-	memcpy(&a, buff, 4);
-	return a;
+	val1.val.swap(val2.val);
 }
-double vdb::Value::double_val() const
+vdb::Value::Value(const Value &value)
 {
-	double a;
-	memcpy(&a, buff, 8);
-	return a;
+	if (value.type() == 3)
+	{
+		auto size = strlen(std::get<char *>(value.val));
+
+		val = new char[size + 1];
+		memcpy(std::get<char *>(val), std::get<char *>(value.val), size + 1);
+		std::get<char *>(val)[size] = '\0';
+	}
+	else
+	{
+		val = value.val;
+	}
+}
+vdb::Value::Value(Value &&value) noexcept
+{
+	val = value.val;
+	value.val = 0; // to prevent deallocation in char * case 
+}
+vdb::Value &vdb::Value::operator=(Value value) noexcept
+{
+	vdb::swap(*this, value);
+	return *this;
+}
+vdb::Value::Value(const char *str, bool)
+{
+	reset(); //if constructor is used for type conversion
+
+	auto size = strlen(str);
+	bool bit = false;
+
+	if (size > 64)
+		bit = true;
+
+	val = new char[bit ? 64 : size + 1];
+	memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
+	std::get<char *>(val)[bit ? 63 : size] = '\0';
 }
 
-vdb::Value::Value(const vdb::Value &val)
+const char *vdb::Value::cptr()
 {
-	type = val.type;
-	int size = (type == 0) ? 4 : (type == 1 ? 8 : (type == 2 ? 1 : type == 3 ? 32 : 64));
-	buff = new char[size];
-	memcpy(buff, val.buff, size);
-};
-void vdb::Value::operator=(vdb::Value &val)
-{
-	type = val.type;
-	int size = (type == 0) ? 4 : (type == 1 ? 8 : (type == 2 ? 1 : type == 3 ? 32 : 64));
+	switch (val.index())
+	{
+		case 0:
+			return reinterpret_cast<const char *>(std::get_if<int>(&val));
+		case 1:
+			return reinterpret_cast<const char *>(std::get_if<double>(&val));
+		case 2:
+			return reinterpret_cast<const char *>(std::get_if<char>(&val));
+		case 3:
+			return std::get<char *>(val);
+	}
+}
 
-	delete[] buff; //if buff == nullptr, there'll be no effect
-
-	buff = new char[size];
-	memcpy(buff, val.buff, size);
-};
-vdb::Value::Value()
-{
-}
-vdb::Value::Value(int val)
-{
-	type = 0;
-	buff = new char[4];
-	memcpy(buff, &val, 4);
-}
-vdb::Value::Value(double val)
-{
-	type = 1;
-	buff = new char[8];
-	memcpy(buff, &val, 8);
-}
-vdb::Value::Value(char val)
-{
-	type = 2;
-	buff = new char[1];
-	*buff = val;
-}
-vdb::Value::Value(char *val, int size)
-{
-	type = (size == 32) ? 3 : 4;
-	buff = new char[size];
-	memcpy(buff, val, size);
-}
-vdb::Value::Value(const char *val)
-{
-	size_t size = strlen(val);
-	type = (size <= 32) ? 3 : 4;
-	buff = new char[type == 3 ? 32 : 64];
-	memcpy(buff, val, type == 3 ? 32 : 64);
-}
-uint8_t vdb::Value::get_type()
-{
-	return type;
-}
 void vdb::Value::reset()
 {
-	delete[] buff;
-	buff = nullptr;
-}
-vdb::Value::operator int() const
-{
-	if (type == 1)
-		return static_cast<int>(double_val());
-	return int_val();
-}
-vdb::Value::operator double() const
-{
-	return double_val();
-}
-vdb::Value::operator char() const
-{
-	return buff[0];
-}
-vdb::Value::operator char *() const
-{
-	return buff;
+	if (val.index() == 3)
+	{
+		delete[] std::get<char *>(val);
+		val = nullptr;
+	}
 }
 std::string vdb::Value::to_string()
 {
-	if (buff == nullptr)
-		return std::string("null");
-	switch (type)
+	switch (val.index())
 	{
 		case 0:
-			return std::to_string(int_val());
+			return std::to_string(get<int>(val));
 		case 1:
-			return std::to_string(double_val());
+			return std::to_string(get<double>(val));
 		case 2:
-			return std::string(1, buff[0]);
+			return std::to_string(get<char>(val));
 		case 3:
-		case 4:
-			return std::string(buff);
+			return std::string(get<char *>(val));
 	}
-	return std::string("");
 }
-vdb::Value::~Value()
+std::ostream &vdb::operator<<(std::ostream &os, Value val_)
 {
-	delete[] buff;
+	std::visit([&os](auto &&x){ os << x; }, val_.val); // visit variant 
+	return os;
 }
