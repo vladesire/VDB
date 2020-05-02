@@ -1,27 +1,10 @@
+#include <iostream> // for operator<<()
 #include "vdb_value.h"
-
-#include <iostream>
 
 void vdb::swap(Value &val1, Value &val2)
 {
 	val1.val.swap(val2.val);
 }
-
-vdb::Value::Value(const char *str, bool)
-{
-	reset(); //if constructor is used for type conversion
-
-	auto size = strlen(str);
-	bool bit = false;
-
-	if (size > 64)
-		bit = true;
-
-	val = new char[bit ? 64 : size + 1];
-	memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
-	std::get<char *>(val)[bit ? 63 : size] = '\0';
-}
-
 vdb::Value::Value(const Value &value)
 {
 	if (value.type() == 3)
@@ -37,41 +20,29 @@ vdb::Value::Value(const Value &value)
 		val = value.val;
 	}
 }
-
 vdb::Value::Value(Value &&value) noexcept
 {
 	val = value.val;
 	value.val = 0; // to prevent deallocation in char * case 
 }
-
 vdb::Value &vdb::Value::operator=(Value value) noexcept
 {
 	vdb::swap(*this, value);
 	return *this;
 }
-
-void vdb::Value::reset()
+vdb::Value::Value(const char *str, bool)
 {
-	if (val.index() == 3)
-	{
-		delete[] std::get<char *>(val);
-		val = nullptr;
-	}
-}
+	reset(); //if constructor is used for type conversion
 
-std::string vdb::Value::to_string()
-{
-	switch (val.index())
-	{
-		case 0:
-			return std::to_string(get<int>(val));
-		case 1:
-			return std::to_string(get<double>(val));
-		case 2:
-			return std::to_string(get<char>(val));
-		case 3:
-			return std::string(get<char *>(val));
-	}
+	auto size = strlen(str);
+	bool bit = false;
+
+	if (size > 64)
+		bit = true;
+
+	val = new char[bit ? 64 : size + 1];
+	memcpy(std::get<char *>(val), str, bit ? 64 : size + 1);
+	std::get<char *>(val)[bit ? 63 : size] = '\0';
 }
 
 const char *vdb::Value::cptr()
@@ -89,9 +60,30 @@ const char *vdb::Value::cptr()
 	}
 }
 
-std::ostream &vdb::operator<<(std::ostream &os, Value val)
+void vdb::Value::reset()
 {
-	std::visit([&os](auto &&x){ os << x; }, val.val); // visit variant 
+	if (val.index() == 3)
+	{
+		delete[] std::get<char *>(val);
+		val = nullptr;
+	}
+}
+std::string vdb::Value::to_string()
+{
+	switch (val.index())
+	{
+		case 0:
+			return std::to_string(get<int>(val));
+		case 1:
+			return std::to_string(get<double>(val));
+		case 2:
+			return std::to_string(get<char>(val));
+		case 3:
+			return std::string(get<char *>(val));
+	}
+}
+std::ostream &vdb::operator<<(std::ostream &os, Value val_)
+{
+	std::visit([&os](auto &&x){ os << x; }, val_.val); // visit variant 
 	return os;
 }
-

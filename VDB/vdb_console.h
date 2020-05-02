@@ -7,7 +7,6 @@ namespace vdb
 {
 	int query_cout(std::string query);
 	void vdbms_cout();
-
 }
 
 #endif // !VDB_CONSOLE_H

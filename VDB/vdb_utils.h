@@ -3,6 +3,12 @@
 
 #include <string>
 
+inline void unescape(std::string &str) // \\ -> \, \" -> ", \' -> ' 
+{
+	for (auto it = str.begin(); it != str.end(); ++it)
+		if (*it == '\\')
+			str.erase(it);
+}
 inline void ltrim(std::string &s)
 {
 	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch)
@@ -22,9 +28,12 @@ inline void trim(std::string &s)
 	ltrim(s);
 	rtrim(s);
 }
-
-void unescape(std::string &str); // \" -> ", \' -> ', etc.
-void remove_spaces(std::string &str); // all non-single spaces, leading and ending spaces are deleted
-std::string next_token(std::string &source, const char *delim);
+inline std::string trim(const std::string &s)
+{
+	std::string str{s};
+	ltrim(str);
+	rtrim(str);
+	return str;
+}
 
 #endif // !VDB_UTILS_H_

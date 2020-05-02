@@ -13,13 +13,14 @@ private:
 	std::variant<int, double, char, char *> val;
 
 public:
-	friend void swap(Value &val1, Value &val2);
-	friend std::ostream &operator<<(std::ostream &os, Value val);
-
 	Value() = default;
+	~Value()
+	{
+		reset();
+	}
+
 	Value(const Value &value);
 	Value(Value &&value) noexcept;
-
 	Value &operator=(Value value) noexcept;
 
 	template <class T>
@@ -31,20 +32,7 @@ public:
 
 	template <> // it's identical to const char, but template generates new code for it
 	Value(char *str) : Value(str, false) { }
-
 	Value(const char *str, bool = false);
-
-	
-	~Value()
-	{
-		reset();
-	}
-	constexpr uint8_t type() const
-	{
-		return val.index();
-	}
-
-	void reset();
 
 	// I decided to add implicit int-double conversion as it can be useful in some cases
 	operator int() const
@@ -147,8 +135,15 @@ public:
 		
 	}
 
-
+	void reset();
 	std::string to_string();
+	constexpr uint8_t type() const
+	{
+		return val.index();
+	}
+
+	friend void swap(Value &val1, Value &val2);
+	friend std::ostream &operator<<(std::ostream &os, Value val);
 };
 
 template <class T>

@@ -1,14 +1,15 @@
 #ifndef VDB_ROW_H
 #define VDB_ROW_H
 
-
-#include "vdb_value.h"
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
 
+#include "vdb_value.h"
+
 namespace vdb
 {
+
 class Row
 {
 private:
@@ -22,7 +23,6 @@ private:
 
 public:
 	Row() = default;
-	Row(size_t size_);
 
 	template <typename... Args>
 	Row(Args... args)
@@ -38,19 +38,30 @@ public:
 		return *this;
 	}
 
-	Value &operator[](const uint16_t index); // unchecked
-	Value &at(const uint16_t index); // checked
-
+	Value &operator[](const uint16_t index) // unchecked
+	{
+		return values[index];
+	}
+	Value &at(const uint16_t index) // checked
+	{
+		if (index < values.size())
+			return values[index];
+		else
+			throw std::exception("vdb::Row: Index is out of bound");
+	}
 	void reserve(uint16_t size)
 	{
 		values.reserve(size);
+	}
+	void clear()
+	{
+		values.clear();
 	}
 
 	size_t size()
 	{
 		return values.size();
 	}
-
 };
 
 }

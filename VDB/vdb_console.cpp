@@ -5,42 +5,54 @@
 #include "vdb_utils.h"
 
 namespace 
-{ 
-void print_response(vdb::Response &response)
 {
-	for (size_t i = 0; i < response.size(); i++)
+	std::string next_token(std::string &source, const char *delim)
 	{
-		for (size_t j = 0; j < response[i].size(); j++)
+		size_t pos = source.find_first_of(delim);
+
+		if (pos == std::string::npos)
+			return source;
+
+		// To skip "pre" delimeters
+		size_t skip = 0;
+		if (pos == 0)
 		{
-			std::cout << response[i][j] << "\t";
+			skip = source.find_first_not_of(delim);
+			pos = source.find_first_of(delim, skip);
+		}
+
+		std::string temp;
+		temp = source.substr(skip, pos - skip);
+		source = source.substr(pos + 1);
+		return temp;
+	}
+	void print_response(vdb::Response &response)
+	{
+		for (size_t i = 0; i < response.size(); ++i)
+		{
+			for (size_t j = 0; j < response[i].size(); ++j)
+			{
+				std::cout << response[i][j] << "\t";
+			}
+			std::cout << std::endl;
+		}
+	}
+	void print_table_colnames(const vdb::Table &table)
+	{
+		for (size_t i = 0; i < table.get_colcount(); ++i)
+		{
+			std::cout << table.get_col_name(i) << "\t";
 		}
 		std::cout << std::endl;
 	}
 }
-// Should I delete print_rows?
-void print_rows(vdb::Row *row, size_t size)
-{
-	for (size_t i = 0; i < size; ++i)
-	{
-		for (size_t j = 0; j < row[i].size(); ++j)
-		{
-			std::cout << row[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}
-}
-void print_table_colnames(const vdb::Table &table)
-{
-	for (size_t i = 0; i < table.get_colcount(); ++i)
-	{
-		std::cout << table.get_col_name(i) << "\t";
-	}
-	std::cout << std::endl;
-}
-}
+
 int vdb::query_cout(std::string query)
 {
 	ltrim(query);
+
+	if (!query.size())
+		return -38; //todo;
 
 	if (query[0] != '`')
 	{
@@ -52,11 +64,20 @@ int vdb::query_cout(std::string query)
 
 			if (substr == "table")
 			{
-				vdb::create_db(query);
-				return 0;
+				if (!vdb::syntax_create_db(query))
+				{
+					return -1;
+				}
+				else
+				{
+					vdb::create_db(query);
+					return 0;
+				}
 			}
 			else
-				return 2;
+			{
+				return 1;
+			}
 		}
 		else if (substr == "cls")
 		{
@@ -64,9 +85,13 @@ int vdb::query_cout(std::string query)
 			return 0;
 		}
 		else if (substr == "exit")
+		{
 			return 1812;
+		}
 		else
-			return 2;
+		{
+			return 1;
+		}
 	}
 
 	size_t i = 0;
@@ -84,7 +109,7 @@ int vdb::query_cout(std::string query)
 	table.open(table_name);
 
 	if (!table.is_open())
-		return -1;
+		return -13; //todo
 
 	std::string substr = next_token(query, " ");
 
@@ -101,8 +126,11 @@ int vdb::query_cout(std::string query)
 	else if (substr == "select_where")
 	{
 		vdb::Response resp = table.select_where(query);
-		print_table_colnames(table);
-		print_response(resp);
+		if (resp.size())
+		{
+			print_table_colnames(table);
+			print_response(resp);
+		}
 	}
 	else if (substr == "clear")
 	{
@@ -117,7 +145,7 @@ int vdb::query_cout(std::string query)
 		}
 		catch (const std::exception &)
 		{
-			std::cout << "Fuck you, asshole!";
+			return -312; //todo
 		}
 	}
 	else if (substr == "delete")
@@ -134,18 +162,8 @@ int vdb::query_cout(std::string query)
 	table.close();
 	return 0;
 }
-
 void vdb::vdbms_cout()
 {
-	/*vdb::Table settings;
-	if (std::filesystem::exists(".settings"));
-	{
-		settings.open(".settings");
-		//LOAD SETTINGS
-	}*/
-
-	//std::system("cd databases"); ????
-
 	std::string query_;
 
 	std::getline(std::cin, query_);
@@ -159,11 +177,15 @@ void vdb::vdbms_cout()
 		switch (r)
 		{
 			case 0:
-				std::cout << "OK!" << std::endl; break;
-			case -2:
-				std::cout << "\aWRONG_SYNTAX!" << std::endl; break;
+				std::cout << "OK!\n"; break;
+			case -1:
+				std::cout << "\aTable creation problems!\n"; break;
+			case 1:
+				std::cout << "\aUnknown command's used!\n"; break;
+			case -38:
+				std::cout << "\aEnter something, goddamnit!\n"; break;
 			default:
-				std::cout << "\aSome kind of problem" << std::endl; break;
+				std::cout << "\aSome kind of problem\n"; break;
 		}
 
 		std::cout << "------------------------------------------------------\n\n";

@@ -1,8 +1,10 @@
 #include "vdb_table.h"
 #include "vdb_utils.h"
 
+#include <iostream> // only for exceptions
 #include <sstream>
 #include <cctype>
+#include <regex>
 
 struct vdb::Table::column
 {
@@ -43,6 +45,10 @@ namespace
 		else
 			return 1; // if double or anything else
 	}
+	inline void skip_quotes(const char *str, size_t &i, const char ch)
+	{
+		while (str[++i] != ch || str[i-1] == '\\'); // skip, if escaped
+	}
 	inline void skip_parentheses(const char *str, size_t &i)
 	{
 		uint8_t nest_lvl = 1;
@@ -52,19 +58,45 @@ namespace
 				--nest_lvl;
 			else if (str[i] == '(')
 				++nest_lvl;
+			else if (str[i] == '\"' || str[i] == '\'')
+				skip_quotes(str, i, str[i]);
+		}
+	}
+	void remove_spaces(std::string &str)
+	{
+		ltrim(str);
+		rtrim(str);
+
+		for (auto it = str.begin(); it != str.end(); ++it)
+		{
+			if (*it == '`')
+			{
+				while ((*(++it) != '`') && it != str.end())
+					if (*it == '\\' && (it + 1) != str.end() && (it + 2) != str.end())
+						++it;
+			}
+			else if (*it == '\"')
+			{
+				while ((*(++it) != '\"') && it != str.end())
+					if (*it == '\\' && (it + 1) != str.end() && (it + 2) != str.end())
+						++it;
+			}
+			else if (*it == ' ')
+			{
+				str.erase(it--);
+			}
 		}
 	}
 }
 
-bool vdb::create_db(std::string desc)
+bool vdb::create_db(const std::string &desc)
 {
 	/*
 		Syntax correctness is caller's duty.
 		Meta layout: [meta_size][colcount][rowsize][rowcount][[coltype][colname]...]
 	*/
-	trim(desc);
-	std::stringstream ss{desc};
-	std::string filename; // use it as filename
+	std::stringstream ss{trim(desc)};
+	std::string filename; 
 
 	get_name(ss, filename, '`'); // `name with possible \` char`
 	filename.append(".vdb");
@@ -115,27 +147,11 @@ bool vdb::create_db(std::string desc)
 	file.close();
 	return true;
 }
-
-//todo DEBUG --- start ---
-#include <iostream>
-void vdb::Table::print_meta()
+bool vdb::syntax_create_db(const std::string &str)
 {
-	std::cout << "Meta size: \t" << meta_size << std::endl;
-	std::cout << "Column count: \t" << int(colcount) << std::endl;
-	std::cout << "Row count: \t" << rowcount << std::endl;
-	std::cout << "Row size: \t" << rowsize << std::endl << std::endl;
-
-	for (int i = 0, type; i < colcount; i++)
-	{
-		type = cols[i].type;
-		std::cout << "#" << i + 1 << " Column name: " << cols[i].name << std::endl;
-		std::cout << "#" << i + 1 << " Column type: " << (type == 0 ? "int" : (type == 1 ? "double" : (type == 2 ? "char" : (type == 3 ? "STR32" : "STR64")))) << std::endl;
-	}
-
-	std::cout << std::endl;
+	std::regex pattern{R"(\s*`[^()`|&><=!]+?`\s*:(\s*,?\s*(int|char|double|str32|str64)\s*`[^()`|&><=!]+?`)+\s*)"};
+	return std::regex_match(str, pattern);
 }
-//todo DEBUG --- end ---
-
 
 // Select_where algorithm
 bool vdb::Table::dispatch_or(const char *str, size_t l, size_t r)
@@ -155,10 +171,14 @@ bool vdb::Table::dispatch_or(const char *str, size_t l, size_t r)
 			l = i + 2;
 			++i;
 		}
+		else if (str[i] == '\"' || str[i] == '\'')
+		{
+			skip_quotes(str, i, str[i]);
+		}
 		else if (str[i] == '(')
 		{
-			skip_parentheses(str, i);
-		}
+			skip_parentheses(str, i);  
+		}                              
 		++i;
 	}
 
@@ -182,6 +202,10 @@ bool vdb::Table::dispatch_and(const char *str, size_t l, size_t r)
 
 			l = i + 2;
 			++i;
+		}
+		else if (str[i] == '\"' || str[i] == '\'')
+		{
+			skip_quotes(str, i, str[i]);
 		}
 		else if (str[i] == '(')
 		{
@@ -233,6 +257,10 @@ bool vdb::Table::dispatch_comp(const char *str, size_t l, size_t r)
 		{
 			return get_val(str, l, i) != get_val(str, i + 2, r);
 		}
+		else if (str[i] == '\"' || str[i] == '\'')
+		{
+			skip_quotes(str, i, str[i]);
+		}
 		++i;
 	}
 	return false;
@@ -245,11 +273,7 @@ vdb::Value vdb::Table::get_val(const char *str, size_t l, size_t r)
 {
 	if (str[l] == '`')
 	{
-		//todo: It's only a prototype
-		
 		std::string name {str + l + 1, r - l - 2};
-
-		//todo: unescape
 
 		for (uint8_t i = 0; i < get_colcount(); i++)
 		{
@@ -277,7 +301,6 @@ vdb::Value vdb::Table::get_val(const char *str, size_t l, size_t r)
 	}
 }
 
-
 // Class managment
 vdb::Table::Table() : opened{false} { }
 vdb::Table::~Table()
@@ -288,7 +311,6 @@ vdb::Table::~Table()
 		delete[] cols;
 	}
 }
-
 
 // File managment
 bool vdb::Table::open(const std::string &name)
@@ -333,18 +355,13 @@ void vdb::Table::close()
 		opened = false;
 	}
 }
-vdb::Response vdb::Table::vdb_query(std::string query)
-{
-	// IN DEVELOPMENT
-	return vdb::Response();
-}
-
-
-// CRUD operations:
 
 // Create
 void vdb::Table::insert_into(vdb::Row &row)
 {
+	if (!opened)
+		return;
+
 	file.seekp(0, std::ios::end);
 
 	for (int i = 0; i < colcount; i++)
@@ -381,6 +398,9 @@ void vdb::Table::insert_into(vdb::Row &row)
 }
 void vdb::Table::insert_into(std::string values)
 {
+	if (!opened)
+		return;
+
 	trim(values);
 	std::stringstream ss{values};
 	
@@ -436,12 +456,16 @@ void vdb::Table::insert_into(std::string values)
 // Read
 vdb::Response vdb::Table::select_all()
 {
-	vdb::Row *rows = new vdb::Row[rowcount];
+	if (!opened)
+		throw std::exception("Table is not opened!");
+
+	vdb::Response resp;
+	vdb::Row row;
+	row.reserve(colcount);
 
 	file.seekg(meta_size);
 	for (size_t i = 0; i < rowcount; ++i)
 	{
-		rows[i].reserve(colcount);
 		for (int j = 0; j < colcount; ++j)
 		{
 			switch (cols[j].type)
@@ -450,46 +474,46 @@ vdb::Response vdb::Table::select_all()
 				{
 					int buff;
 					file.read((char *)&buff, sizeof(int));
-					rows[i].push_back(buff);
+					row.push_back(buff);
 				}; break;
 				case 1:
 				{
 					double buff;
 					file.read((char *)&buff, sizeof(double));
-					rows[i].push_back(buff);
+					row.push_back(buff);
 				}; break;
 				case 2:
 				{
 					char buff;
 					file.read(&buff, sizeof(char));
-					rows[i].push_back(buff);
+					row.push_back(buff);
 				}; break;
 				case 3:
 				{
 					char buff[32];
 					file.read(buff, 32 * sizeof(char));
-					rows[i].push_back(buff);
+					row.push_back(buff);
 				}; break;
 				case 4:
 				{
 					char buff[64];
 					file.read(buff, 64 * sizeof(char));
-					rows[i].push_back(buff);
+					row.push_back(buff);
 				}; break;
 			}
 		}
+		resp.push_back(row);
+		row.clear();
 	}
 
-
-	vdb::Response resp(rows, rowcount);
-
 	file.seekg(0);
-	delete[] rows;
-
 	return resp;
 }
 vdb::Response vdb::Table::select_where(std::string condition)
 {
+	if (!opened)
+		throw std::exception("Table is not opened!");
+
 	remove_spaces(condition);
 
 	vdb::Response all = select_all();
@@ -518,9 +542,6 @@ vdb::Response vdb::Table::select_where(std::string condition)
 
 	return resp;
 }
-
-// Update...
-// ...
 
 // Delete
 void vdb::Table::clear()
